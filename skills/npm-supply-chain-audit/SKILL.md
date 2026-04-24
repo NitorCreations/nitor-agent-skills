@@ -210,7 +210,7 @@ Present a summary of the audit results to the user:
 
 IMPORTANT formatting rules – follow exactly:
 
-- Use a numbered list for fixes. Each fix is ONE list item – all explanation and code for that fix must be inside that item. NEVER put the explanation in a separate numbered item.
+- Use a numbered list for fixes. Put the explanation BEFORE the code block, in the same list item. NEVER continue the explanation after the code block as a new numbered item – this causes duplicate numbers (1, 1, 2, 2) which looks broken.
 - Every proposed config change MUST be wrapped in a fenced code block using triple backticks and a language tag (e.g. yaml, json, toml, ini). RAW config text without triple-backtick fences is WRONG and hard to read.
 - Leave a blank line before the opening triple backticks and after the closing triple backticks.
 
