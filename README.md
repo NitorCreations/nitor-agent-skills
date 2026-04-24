@@ -20,11 +20,11 @@ npx skills add nitor/nitor-agent-skills --list
 
 ## Usage
 
-Once installed, skills are automatically available to your agent. You can invoke them by name (e.g. `/npm-supply-chain-fix`) or just describe what you need — the agent will pick the right skill based on your prompt.
+Once installed, skills are automatically available to your agent. You can invoke them by name (e.g. `/npm-supply-chain-audit`) or just describe what you need — the agent will pick the right skill based on your prompt.
 
 ## Available skills
 
-- **npm-supply-chain-fix** — Fix npm supply-chain security issues in the current repo. Detects the package manager, checks for missing protections (lockfile, lifecycle script blocking, release-age cooldown, and more), and applies fixes. Supports npm, pnpm, Yarn, Bun, and Aube.
+- **npm-supply-chain-audit** — Audit and fix npm supply-chain security issues in the current repo. Detects the package manager, checks for missing protections (lockfile, lifecycle script blocking, release-age cooldown, and more), and applies fixes after user confirmation. Supports npm, pnpm, Yarn, Bun, and Aube.
 
 ## Contributing
 

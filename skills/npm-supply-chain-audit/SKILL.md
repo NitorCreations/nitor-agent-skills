@@ -1,10 +1,10 @@
 ---
-name: npm-supply-chain-fix
+name: npm-supply-chain-audit
 description: >
-  Fix npm supply-chain security issues in the current repo. Detects the package manager,
+  Audit and fix npm supply-chain security issues in the current repo. Detects the package manager,
   checks for missing protections (lockfile, lifecycle script blocking, release-age cooldown,
-  pnpm exotic subdeps/trust policy, Yarn Berry hardened mode), and applies fixes.
-  Supports npm, pnpm, Yarn, Bun, and Aube.
+  pnpm exotic subdeps/trust policy, Yarn Berry hardened mode), presents findings, and applies
+  fixes after user confirmation. Supports npm, pnpm, Yarn, Bun, and Aube.
   Use when asked to "harden npm", "fix supply chain", "secure dependencies", or "audit npm security".
 allowed-tools:
   - Read
@@ -21,9 +21,9 @@ allowed-tools:
   - Bash(git *)
 ---
 
-# npm supply-chain security fix
+# npm supply-chain security audit
 
-Review the current repo and fix all npm supply-chain security issues.
+Audit the current repo for npm supply-chain security issues, present findings to the user, and apply fixes only after confirmation.
 
 ## Step 1 — Detect the package manager
 
@@ -38,9 +38,9 @@ Check which package manager(s) are in use:
 
 If no lockfile exists, default to npm.
 
-## Step 2 — Check and fix each issue
+## Step 2 — Audit
 
-Work through the checks below. For each one, check the current state and apply the fix only if needed. Explain each change you make.
+Work through the checks below. For each one, check the current state and record whether it passes or needs a fix. Do NOT make any changes yet.
 
 ### 2.1 Lockfile committed
 
@@ -185,6 +185,16 @@ cooldown:
 
 If neither Renovate nor Dependabot is configured, skip this check — don't add a dependency update tool unprompted.
 
-## Step 3 — Summary
+## Step 3 — Present findings
 
-After applying fixes, print a summary of what was changed and what was already in place. If any issues require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`), list them clearly.
+Present a summary of the audit results to the user:
+
+- List checks that already pass (no action needed).
+- List checks that need fixes, with the specific changes that would be made to each file.
+- List any issues that require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`).
+
+Then ask the user for confirmation before proceeding.
+
+## Step 4 — Apply fixes
+
+After the user confirms, apply the agreed-upon changes. If the user wants to skip certain fixes, respect that. Summarize what was changed.
