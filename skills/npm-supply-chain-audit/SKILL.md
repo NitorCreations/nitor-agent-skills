@@ -180,12 +180,12 @@ This validates the lockfile against the registry.
 
 Check if the repo uses Renovate or Dependabot and whether a cooldown is configured.
 
-**Renovate** – look for config in `renovate.json`, `renovate.json5`, `.github/renovate.json`, `.github/renovate.json5`, `.renovaterc`, `.renovaterc.json`, or a `"renovate"` key in `package.json`. Check if `"config:best-practices"` is in the `extends` array (this preset includes a 3-day cooldown for npm). Also check shared presets – if `extends` references a custom preset (e.g. `"local>myorg/renovate-config"`), note that the cooldown may already be configured there and the user should verify.
+**Renovate** – look for config in `renovate.json`, `renovate.json5`, `.github/renovate.json`, `.github/renovate.json5`, `.renovaterc`, `.renovaterc.json`, or a `"renovate"` key in `package.json`. Check if the `extends` array includes `"config:best-practices"` (which includes a 3-day npm cooldown) or `"security:minimumReleaseAgeNpm"`. Also check shared presets – if `extends` references a custom preset (e.g. `"local>myorg/renovate-config"`), note that the cooldown may already be configured there and the user should verify.
 
-If Renovate config exists but doesn't extend `config:best-practices` or a shared preset, suggest adding it:
+If Renovate config exists but doesn't include either preset, suggest adding `security:minimumReleaseAgeNpm`:
 
 ```json
-{ "extends": ["config:best-practices"] }
+{ "extends": ["security:minimumReleaseAgeNpm"] }
 ```
 
 **Dependabot** – look for `.github/dependabot.yml`. Check if npm ecosystem entries have a `cooldown` configured. If not, suggest adding:
