@@ -19,6 +19,12 @@ To list available skills before installing:
 npx skills add nitor/nitor-agent-skills --list
 ```
 
+To update installed skills to their latest versions:
+
+```sh
+npx skills update
+```
+
 ## Usage
 
 Once installed, skills are automatically available to your agent. Invoke them by name (e.g. `/npm-supply-chain-audit`) or just describe what you need (e.g. "harden my project against supply-chain attacks").

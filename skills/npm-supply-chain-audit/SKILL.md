@@ -198,6 +198,8 @@ Present a summary of the audit results to the user:
 - List checks that need fixes, with the specific changes that would be made to each file
 - List any issues that require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`)
 
+Use a single numbered list for items that need fixes. Keep the explanation for each item within the same list entry – do not start a new numbered item for the explanation, as this restarts numbering and looks broken. Use fenced code blocks for proposed config changes.
+
 Then ask the user for confirmation before proceeding.
 
 ## Step 4 – Apply fixes
