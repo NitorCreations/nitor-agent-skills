@@ -205,7 +205,27 @@ Present a summary of the audit results to the user:
 - List checks that need fixes, with the specific changes that would be made to each file
 - List any issues that require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`)
 
-Use a single numbered list for items that need fixes. Keep the explanation for each item within the same list entry – do not start a new numbered item for the explanation, as this restarts numbering and looks broken. Use fenced code blocks for proposed config changes, and leave a blank line after each code block so the next list item renders correctly.
+Use a single numbered list for items that need fixes. Keep the explanation for each item within the same list entry – do not start a new numbered item for the explanation, as this restarts numbering and looks broken.
+
+Formatting rules for the output:
+
+- MUST use fenced code blocks (triple backticks with language tag) for all proposed config changes – never use bare indented text
+- MUST leave a blank line before and after each fenced code block
+- MUST leave a blank line between list items
+
+Example of correct formatting:
+
+1. Release-age cooldown – not configured. Add to pnpm-workspace.yaml:
+
+   ```yaml
+   minimumReleaseAge: 4320
+   ```
+
+2. Block exotic subdeps – not configured. Add to pnpm-workspace.yaml:
+
+   ```yaml
+   blockExoticSubdeps: true
+   ```
 
 Then ask the user for confirmation before proceeding.
 
