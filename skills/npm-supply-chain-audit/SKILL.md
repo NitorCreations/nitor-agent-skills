@@ -97,36 +97,40 @@ onlyBuiltDependencies:
 
 Do NOT automatically add allowlist entries — just warn and suggest. The user should audit each package before trusting it.
 
-### 2.4 Release-age cooldown (>= 3 days)
+### 2.4 Release-age cooldown
 
-**npm 11.10+** — ensure `.npmrc` contains:
+Check if a release-age cooldown is configured. If not, recommend adding one. If already configured, note the current value. When presenting findings, advise the user that 3 days is a good minimum. Mention that 7 days provides stronger protection but slows down updates.
+
+The setting per package manager:
+
+**npm 11.10+** — `min-release-age` in `.npmrc` (value in days):
 
 ```ini
 min-release-age=3
 ```
 
-**pnpm 10.16+** — ensure `pnpm-workspace.yaml` contains:
+**pnpm 10.16+** — `minimumReleaseAge` in `pnpm-workspace.yaml` (value in minutes):
 
 ```yaml
 minimumReleaseAge: 4320
 ```
 
-Also check if `.npmrc` contains a `minimumReleaseAge` setting — this is a common mistake. pnpm only reads this setting from `pnpm-workspace.yaml`, not `.npmrc`. If found, warn the user and move it to `pnpm-workspace.yaml`.
+Also check if `.npmrc` contains a `minimumReleaseAge` setting — this is a common mistake. pnpm only reads this setting from `pnpm-workspace.yaml`, not `.npmrc`. If found, warn the user and suggest moving it to `pnpm-workspace.yaml`.
 
-**Yarn Berry 4.10+** — ensure `.yarnrc.yml` contains:
+**Yarn Berry 4.10+** — `npmMinimalAgeGate` in `.yarnrc.yml` (value in minutes):
 
 ```yaml
 npmMinimalAgeGate: 4320
 ```
 
-**Bun 1.3+** — ensure `bunfig.toml` contains:
+**Bun 1.3+** — `minimumReleaseAge` in `bunfig.toml` (value in seconds):
 
 ```toml
 [install]
 minimumReleaseAge = 259200
 ```
 
-**Aube** — defaults to 1440 minutes (1 day). Ensure `aube-workspace.yaml` or `.npmrc` sets at least 4320 (3 days):
+**Aube** — defaults to 1440 minutes (1 day). `minimumReleaseAge` in `aube-workspace.yaml` (value in minutes):
 
 ```yaml
 minimumReleaseAge: 4320
