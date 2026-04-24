@@ -73,16 +73,25 @@ enableScripts: false
 
 ### 2.3 Build script allowlists
 
-When lifecycle scripts are blocked, some packages legitimately need build scripts (e.g. `esbuild`, `sharp`, `better-sqlite3`, `@swc/core`, `bcrypt`, `canvas`). Check the dependency tree and warn if known packages that require build scripts are installed but not allowlisted.
+When lifecycle scripts are blocked, some packages legitimately need build scripts. Check the lockfile for packages that require builds:
 
-**pnpm 10+ / Aube** – check `allowBuilds` (or `onlyBuiltDependencies`) in `pnpm-workspace.yaml` / `aube-workspace.yaml`. If packages that need builds are in the dependency tree but not listed, warn the user and suggest adding them:
+- **pnpm** – look for entries with `requiresBuild: true` in `pnpm-lock.yaml`
+- **npm** – look for `hasInstallScript: true` in `package-lock.json`
+- **Yarn Berry** – look for `hasBin` or build-related metadata in `yarn.lock`
+- **Bun** – check `bun.lock` for packages with lifecycle scripts
+
+Compare the list of packages that require builds against the current allowlist. Report any that are missing, but do NOT suggest adding them blindly – the user must verify each package is trusted before allowlisting it. Only well-known packages from reputable maintainers (e.g. `esbuild`, `sharp`, `@swc/core`) should be considered.
+
+The allowlist setting per package manager:
+
+**pnpm 10+ / Aube** – `onlyBuiltDependencies` (or `allowBuilds`) in `pnpm-workspace.yaml` / `aube-workspace.yaml`:
 
 ```yaml
 onlyBuiltDependencies:
   - esbuild
 ```
 
-**Yarn Berry** – check `dependenciesMeta` in `package.json`. If packages that need builds are installed but not allowlisted, warn the user:
+**Yarn Berry** – `dependenciesMeta` in `package.json`:
 
 ```json
 "dependenciesMeta": {
@@ -90,13 +99,11 @@ onlyBuiltDependencies:
 }
 ```
 
-**Bun** – check `trustedDependencies` in `package.json`. If packages that need builds are installed but not allowlisted, warn the user:
+**Bun** – `trustedDependencies` in `package.json`:
 
 ```json
 "trustedDependencies": ["esbuild"]
 ```
-
-Do NOT automatically add allowlist entries – just warn and suggest. The user should audit each package before trusting it.
 
 ### 2.4 Release-age cooldown
 
