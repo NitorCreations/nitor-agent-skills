@@ -201,31 +201,18 @@ If neither Renovate nor Dependabot is configured, skip this check – don't add 
 
 Present a summary of the audit results to the user:
 
-- List checks that already pass (no action needed)
-- List checks that need fixes, with the specific changes that would be made to each file
-- List any issues that require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`)
+1. Start with a one-line summary count (e.g. "3 passing, 4 need fixes")
+2. List checks that already pass – keep these brief, no need to explain why they pass
+3. List checks that need fixes, with the specific changes that would be made
+4. List any issues that require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`)
+5. When multiple fixes target the same file, show a combined preview of the full proposed file content at the end
+6. Do not use horizontal rules (`---`) – headings provide enough structure
 
-Use a single numbered list for items that need fixes. Keep the explanation for each item within the same list entry – do not start a new numbered item for the explanation, as this restarts numbering and looks broken.
+IMPORTANT formatting rules – follow exactly:
 
-Formatting rules for the output:
-
-- MUST use fenced code blocks (triple backticks with language tag) for all proposed config changes – never use bare indented text
-- MUST leave a blank line before and after each fenced code block
-- MUST leave a blank line between list items
-
-Example of correct formatting:
-
-1. Release-age cooldown – not configured. Add to pnpm-workspace.yaml:
-
-   ```yaml
-   minimumReleaseAge: 4320
-   ```
-
-2. Block exotic subdeps – not configured. Add to pnpm-workspace.yaml:
-
-   ```yaml
-   blockExoticSubdeps: true
-   ```
+- Use a numbered list for fixes. Each fix is ONE list item – all explanation and code for that fix must be inside that item. NEVER put the explanation in a separate numbered item.
+- Every proposed config change MUST be wrapped in a fenced code block using triple backticks and a language tag (e.g. yaml, json, toml, ini). RAW config text without triple-backtick fences is WRONG and hard to read.
+- Leave a blank line before the opening triple backticks and after the closing triple backticks.
 
 Then ask the user for confirmation before proceeding.
 
