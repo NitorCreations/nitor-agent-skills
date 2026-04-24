@@ -202,7 +202,7 @@ If neither Renovate nor Dependabot is configured, skip this check – don't add 
 Present a summary of the audit results to the user:
 
 1. Start with a one-line summary count (e.g. "3 passing, 4 need fixes")
-2. List checks that already pass – keep these brief, no need to explain why they pass
+2. List checks that already pass as bullet points (not numbered) – keep these brief
 3. List checks that need fixes, with the specific changes that would be made
 4. List any issues that require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`)
 5. When multiple fixes target the same file, show a combined preview of the full proposed file content at the end
@@ -210,8 +210,9 @@ Present a summary of the audit results to the user:
 
 IMPORTANT formatting rules – follow exactly:
 
-- Use a numbered list for fixes. Put the explanation BEFORE the code block, in the same list item. NEVER continue the explanation after the code block as a new numbered item – this causes duplicate numbers (1, 1, 2, 2) which looks broken.
+- Use a numbered list for fixes. Put ALL explanation BEFORE the code block.
 - Every proposed config change MUST be wrapped in a fenced code block using triple backticks and a language tag (e.g. yaml, json, toml, ini). RAW config text without triple-backtick fences is WRONG and hard to read.
+- Indent code blocks with 3 spaces so they are nested inside the list item. This is critical – without the indent, the code block breaks out of the list and the numbering restarts (causing duplicate numbers like 1, 1, 2, 2).
 - Leave a blank line before the opening triple backticks and after the closing triple backticks.
 
 Then ask the user for confirmation before proceeding.
