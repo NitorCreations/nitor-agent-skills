@@ -35,7 +35,9 @@ Check which package manager(s) are in use:
 - `bun.lockb` or `bun.lock` -> Bun
 - `packageManager` field in `package.json` confirms the PM and version
 
-Use the `packageManager` field to determine the version. If not present, run the PM's `--version` command. The version is needed for checks that depend on minimum PM versions (e.g. pnpm 10+, npm 11.10+, Yarn Berry 4.10+, Bun 1.3+).
+Use the `packageManager` field to determine the version. If not present, run the PM's `--version` command. The version is needed for checks that depend on minimum PM versions (e.g. pnpm 10+, pnpm 11+, npm 11.10+, Yarn Berry 4.10+, Bun 1.3+).
+
+pnpm 11 ships several supply-chain protections on by default (`minimumReleaseAge: 1440`, `blockExoticSubdeps: true`, `strictDepBuilds: true`) and only reads pnpm-specific settings from `pnpm-workspace.yaml` (or `~/.config/pnpm/config.yaml`), not from `.npmrc`. Many checks below differ between pnpm 10 and pnpm 11+.
 
 If no lockfile exists, default to npm.
 
@@ -55,7 +57,7 @@ If no lockfile exists (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.
 ignore-scripts=true
 ```
 
-**pnpm 10+** – blocks lifecycle scripts by default. Check that `pnpm-workspace.yaml` does NOT set `dangerouslyAllowAllBuilds: true`. If it does, warn the user.
+**pnpm 10+** – blocks lifecycle scripts by default. Check that `pnpm-workspace.yaml` does NOT set `dangerouslyAllowAllBuilds: true`. If it does, warn the user. pnpm 11+ additionally enables `strictDepBuilds: true` by default, so installs error (rather than just warn) when a dependency wants to run a build script that isn't in the allowlist – verify it has not been disabled in `pnpm-workspace.yaml`.
 
 **pnpm <= 9** – ensure `.npmrc` contains `ignore-scripts=true`.
 
@@ -84,7 +86,15 @@ Compare the list of packages that require builds against the current allowlist. 
 
 The allowlist setting per package manager:
 
-**pnpm 10+ / Aube** – `onlyBuiltDependencies` (or `allowBuilds`) in `pnpm-workspace.yaml` / `aube-workspace.yaml`:
+**pnpm 11+** – `allowBuilds` map in `pnpm-workspace.yaml`. This replaces `onlyBuiltDependencies`, `onlyBuiltDependenciesFile`, `neverBuiltDependencies`, and `ignoredBuiltDependencies`, which are no longer supported:
+
+```yaml
+allowBuilds:
+  esbuild: true
+  core-js: false
+```
+
+**pnpm 10 / Aube** – `onlyBuiltDependencies` in `pnpm-workspace.yaml` / `aube-workspace.yaml`:
 
 ```yaml
 onlyBuiltDependencies:
@@ -123,7 +133,9 @@ min-release-age=3
 minimumReleaseAge: 4320
 ```
 
-Also check if `.npmrc` contains a `minimumReleaseAge` setting – this is a common mistake. pnpm only reads this setting from `pnpm-workspace.yaml`, not `.npmrc`. If found, warn the user and suggest moving it to `pnpm-workspace.yaml`.
+**pnpm 11+** – defaults to `minimumReleaseAge: 1440` (1 day). The repo is already protected, but recommend overriding to a stronger value (e.g. `4320` for 3 days or `10080` for 7 days). Also verify the default has not been disabled with `minimumReleaseAge: 0`.
+
+Also check if `.npmrc` contains a `minimumReleaseAge` setting – this is a common mistake. pnpm only reads this setting from `pnpm-workspace.yaml`, not `.npmrc` (and pnpm 11+ does not read any pnpm-specific settings from `.npmrc` at all). If found, warn the user and suggest moving it to `pnpm-workspace.yaml`.
 
 **Yarn Berry 4.10+** – `npmMinimalAgeGate` in `.yarnrc.yml` (value in minutes):
 
@@ -146,13 +158,13 @@ minimumReleaseAge: 4320
 
 ### 2.5 Block exotic subdeps (pnpm / Aube)
 
-**pnpm** – ensure `pnpm-workspace.yaml` contains:
+**pnpm 10** – ensure `pnpm-workspace.yaml` contains:
 
 ```yaml
 blockExoticSubdeps: true
 ```
 
-**Aube** – defaults to true. Verify it has not been explicitly disabled in `aube-workspace.yaml`.
+**pnpm 11+ / Aube** – defaults to true. Verify it has not been explicitly disabled in `pnpm-workspace.yaml` / `aube-workspace.yaml`.
 
 This prevents transitive dependencies from using git or tarball URLs.
 
