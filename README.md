@@ -1,8 +1,5 @@
 # nitor-agent-skills
 
-> [!NOTE]
-> This repository is not yet public but will be made public soon.
-
 A collection of AI agent skills created by [Nitor](https://nitor.com), designed for use with [Claude Code](https://docs.anthropic.com/en/docs/claude-code), [GitHub Copilot](https://github.com/features/copilot), and other compatible agents.
 
 ## Installation
