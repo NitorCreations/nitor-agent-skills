@@ -115,7 +115,20 @@ onlyBuiltDependencies:
 "trustedDependencies": ["esbuild"]
 ```
 
-### 2.4 Release-age cooldown
+### 2.4 CI pipeline impact analysis (lifecycle script blocking)
+
+Whenever lifecycle script blocking is being recommended (or is already configured), scan all CI workflow files (`.github/workflows/*.yml`, `.gitlab-ci.yml`, `Jenkinsfile`, `bitbucket-pipelines.yml`, `.circleci/config.yml`, etc.). For each job that installs dependencies, check whether subsequent steps invoke tools that depend on packages requiring build scripts (as identified from the lockfile in check 2.3). Also check `package.json` for lifecycle hooks (`prepublishOnly`, `prepare`, `prepack`) that run implicitly during publish/pack commands and would be silently skipped.
+
+Report all affected workflows and hooks as part of the findings alongside the proposed blocking fix, specifying the package-manager-appropriate override:
+
+- **npm** – `npm rebuild --ignore-scripts=false <pkg>` after install; `npm_config_ignore_scripts=false` env var on publish steps
+- **pnpm** – packages in `allowBuilds` / `onlyBuiltDependencies` are rebuilt automatically; no extra step needed if the allowlist is correct
+- **Yarn Berry** – packages with `dependenciesMeta.built: true` are rebuilt automatically after install
+- **Bun** – packages in `trustedDependencies` are rebuilt automatically after install
+
+Do not present findings from checks 2.2 or 2.3 until this check is complete — the user must see the blocking config, the allowlist, and any CI/hook impacts together in Step 3.
+
+### 2.5 Release-age cooldown
 
 Check if a release-age cooldown is configured. If not, recommend adding one. If already configured, note the current value. When presenting findings, advise the user that 3 days is a good minimum. Mention that 7 days provides stronger protection but slows down updates.
 
@@ -156,7 +169,7 @@ minimumReleaseAge = 259200
 minimumReleaseAge: 4320
 ```
 
-### 2.5 Block exotic subdeps (pnpm / Aube)
+### 2.6 Block exotic subdeps (pnpm / Aube)
 
 **pnpm 10** – ensure `pnpm-workspace.yaml` contains:
 
@@ -168,7 +181,7 @@ blockExoticSubdeps: true
 
 This prevents transitive dependencies from using git or tarball URLs.
 
-### 2.6 Trust policy (pnpm / Aube)
+### 2.7 Trust policy (pnpm / Aube)
 
 **pnpm / Aube** – ensure `pnpm-workspace.yaml` or `aube-workspace.yaml` contains:
 
@@ -178,7 +191,7 @@ trustPolicy: no-downgrade
 
 This blocks packages whose trust level has decreased.
 
-### 2.7 Hardened mode (Yarn Berry only)
+### 2.8 Hardened mode (Yarn Berry only)
 
 If using Yarn Berry, ensure `.yarnrc.yml` contains:
 
@@ -188,7 +201,7 @@ enableHardenedMode: true
 
 This validates the lockfile against the registry.
 
-### 2.8 Dependency update cooldown (Renovate / Dependabot)
+### 2.9 Dependency update cooldown (Renovate / Dependabot)
 
 Check if the repo uses Renovate or Dependabot and whether a cooldown is configured.
 
