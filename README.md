@@ -7,13 +7,13 @@ A collection of AI agent skills created by [Nitor](https://nitor.com), designed 
 Install skills using the [skills CLI](https://github.com/vercel-labs/skills):
 
 ```sh
-npx skills add nitor/nitor-agent-skills
+npx skills add nitorcreations/nitor-agent-skills
 ```
 
 To list available skills before installing:
 
 ```sh
-npx skills add nitor/nitor-agent-skills --list
+npx skills add nitorcreations/nitor-agent-skills --list
 ```
 
 To update installed skills to their latest versions:
@@ -46,5 +46,5 @@ For more on the skills format, see [agentskills.io](https://agentskills.io/).
 You can install skills directly from a feature branch before merging:
 
 ```sh
-npx skills add nitor/nitor-agent-skills#your-branch
+npx skills add nitorcreations/nitor-agent-skills#your-branch
 ```
