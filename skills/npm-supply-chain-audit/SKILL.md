@@ -3,7 +3,7 @@ name: npm-supply-chain-audit
 description: >
   Audit and fix npm supply-chain security issues in the current repo. Detects the package manager,
   checks for missing protections (lockfile, lifecycle script blocking, release-age cooldown,
-  pnpm exotic subdeps/trust policy, Yarn Berry hardened mode), presents findings, and applies
+  exotic dependency blocking, pnpm trust policy, Yarn Berry hardened mode), presents findings, and applies
   fixes after user confirmation. Supports npm, pnpm, Yarn, Bun, and Aube.
   Use when asked to "harden npm", "fix supply chain", "secure dependencies", or "audit npm security".
 allowed-tools:
@@ -35,9 +35,11 @@ Check which package manager(s) are in use:
 - `bun.lockb` or `bun.lock` -> Bun
 - `packageManager` field in `package.json` confirms the PM and version
 
-Use the `packageManager` field to determine the version. If not present, run the PM's `--version` command. The version is needed for checks that depend on minimum PM versions (e.g. pnpm 10+, pnpm 11+, npm 11.10+, Yarn Berry 4.10+, Bun 1.3+).
+Use the `packageManager` field to determine the version. If not present, run the PM's `--version` command. The version is needed for checks that depend on minimum PM versions (e.g. pnpm 10+, pnpm 11+, npm 11.10+, npm 12+, Yarn Berry 4.10+, Bun 1.3+).
 
 pnpm 11 ships several supply-chain protections on by default (`minimumReleaseAge: 1440`, `blockExoticSubdeps: true`, `strictDepBuilds: true`) and only reads pnpm-specific settings from `pnpm-workspace.yaml` (or `~/.config/pnpm/config.yaml`), not from `.npmrc`. Many checks below differ between pnpm 10 and pnpm 11+.
+
+npm 12 (estimated July 2026) similarly ships protections on by default: dependency lifecycle scripts are blocked unless approved via the `allowScripts` field in `package.json`, and git and remote-URL dependencies are blocked (`allow-git` and `allow-remote` default to `none`). Several checks below differ between npm 11 and npm 12+.
 
 If no lockfile exists, default to npm.
 
@@ -51,11 +53,15 @@ If no lockfile exists (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `bun.
 
 ### 2.2 Block lifecycle scripts
 
-**npm** – ensure `.npmrc` contains:
+**npm 12+** – blocks dependency lifecycle scripts (`preinstall`, `install`, `postinstall`, and `prepare` for git/file/link dependencies) by default; only packages approved in the `allowScripts` field of `package.json` may run them. Check that `.npmrc` does not loosen this with a broad `allow-scripts` setting, and review existing `allowScripts` entries – flag any untrusted packages approved there.
+
+**npm < 12** – ensure `.npmrc` contains:
 
 ```ini
 ignore-scripts=true
 ```
+
+Also recommend upgrading to npm 11.16+, which warns during install about packages whose scripts will be blocked by default in npm 12.
 
 **pnpm 10+** – blocks lifecycle scripts by default. Check that `pnpm-workspace.yaml` does NOT set `dangerouslyAllowAllBuilds: true`. If it does, warn the user. pnpm 11+ additionally enables `strictDepBuilds: true` by default, so installs error (rather than just warn) when a dependency wants to run a build script that isn't in the allowlist – verify it has not been disabled in `pnpm-workspace.yaml`.
 
@@ -85,6 +91,15 @@ When lifecycle scripts are blocked, some packages legitimately need build script
 Compare the list of packages that require builds against the current allowlist. Report any that are missing, but do NOT suggest adding them blindly – the user must verify each package is trusted before allowlisting it. Only well-known packages from reputable maintainers (e.g. `esbuild`, `sharp`, `@swc/core`) should be considered.
 
 The allowlist setting per package manager:
+
+**npm 12+** – `allowScripts` map in `package.json`, managed with `npm approve-scripts` / `npm deny-scripts`. List packages pending review with `npm approve-scripts --allow-scripts-pending`, approve specific packages with `npm approve-scripts <pkg>` (writes version-pinned entries like `pkg@1.2.3`), and block packages with `npm deny-scripts <pkg>`:
+
+```json
+"allowScripts": {
+  "esbuild@0.25.0": true,
+  "core-js": false
+}
+```
 
 **pnpm 11+** – `allowBuilds` map in `pnpm-workspace.yaml`. This replaces `onlyBuiltDependencies`, `onlyBuiltDependenciesFile`, `neverBuiltDependencies`, and `ignoredBuiltDependencies`, which are no longer supported:
 
@@ -121,7 +136,8 @@ Whenever lifecycle script blocking is being recommended (or is already configure
 
 Report all affected workflows and hooks as part of the findings alongside the proposed blocking fix, specifying the package-manager-appropriate override:
 
-- **npm** – `npm rebuild --ignore-scripts=false <pkg>` after install; `npm_config_ignore_scripts=false` env var on publish steps
+- **npm 12+** – packages approved in `allowScripts` run their scripts automatically during install; no extra step needed if the allowlist is correct
+- **npm < 12** – `npm rebuild --ignore-scripts=false <pkg>` after install; `npm_config_ignore_scripts=false` env var on publish steps
 - **pnpm** – packages in `allowBuilds` / `onlyBuiltDependencies` are rebuilt automatically; no extra step needed if the allowlist is correct
 - **Yarn Berry** – packages with `dependenciesMeta.built: true` are rebuilt automatically after install
 - **Bun** – packages in `trustedDependencies` are rebuilt automatically after install
@@ -169,7 +185,20 @@ minimumReleaseAge = 259200
 minimumReleaseAge: 4320
 ```
 
-### 2.6 Block exotic subdeps (pnpm / Aube)
+### 2.6 Block exotic dependencies (npm / pnpm / Aube)
+
+This prevents dependencies from being fetched from git references or tarball URLs instead of the registry.
+
+**npm 12+** – `allow-git` and `allow-remote` default to `none`. Verify `.npmrc` does not loosen them back to `all` – if the project's own `package.json` legitimately declares git or URL dependencies, suggest `root` (allows direct dependencies only) instead.
+
+**npm 11.10+ (git) / 11.15+ (remote)** – ensure `.npmrc` contains:
+
+```ini
+allow-git=none
+allow-remote=none
+```
+
+Use `root` instead of `none` if the project declares direct git/URL dependencies.
 
 **pnpm 10** – ensure `pnpm-workspace.yaml` contains:
 
@@ -178,8 +207,6 @@ blockExoticSubdeps: true
 ```
 
 **pnpm 11+ / Aube** – defaults to true. Verify it has not been explicitly disabled in `pnpm-workspace.yaml` / `aube-workspace.yaml`.
-
-This prevents transitive dependencies from using git or tarball URLs.
 
 ### 2.7 Trust policy (pnpm / Aube)
 
