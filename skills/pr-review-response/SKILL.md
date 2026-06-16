@@ -62,7 +62,7 @@ gh api graphql -f query='
 
 ## 3. Triage
 
-- **Ignore noise.** CI/status bots post reviews with empty `body` and no inline threads (seen: `Cifixie`). They are not actionable — say so, don't chase them.
+- **Ignore noise.** CI/status bots post reviews with empty `body` and no inline threads. They are not actionable — say so, don't chase them.
 - **Real comments** come with a `path`/`line` and substantive `body` (e.g. `copilot-pull-request-reviewer`, humans).
 - A second review round only surfaces _new_ unresolved threads; already-resolved ones won't reappear in the filter above.
 
@@ -71,12 +71,12 @@ gh api graphql -f query='
 Judge on the merits — mild criticism both ways, don't rubber-stamp:
 
 - **Agree** → fix it.
-- **Right problem, wrong fix** → implement a better fix and explain why you diverged. (Example from this repo: reviewer suggested lifting `useAuctionState` to dedupe a fetch; instead added request coalescing in the data layer to avoid churning a component's contract + its test/story harness.)
-- **Disagree** → push back with a concrete reason; don't change code just to silence the bot. Partial fixes are fine (e.g. add the high-value `aria-*` attribute, skip the one that would mislead AT).
+- **Right problem, wrong fix** → implement a better fix and explain why you diverged. (For example, when a reviewer points at a symptom, address the underlying cause if the suggested patch would churn a stable interface or its tests.)
+- **Disagree** → push back with a concrete reason; don't change code just to silence the bot. Partial fixes are fine when only part of the suggestion holds up on the merits.
 
 ## 5. Verify, commit, push
 
-Run the project's checks before committing (see the repo's CLAUDE.md / package scripts; for this repo: `pnpm test`, `pnpm lint` then `prettier --write` any flagged tracked files, `pnpm exec tsc --noEmit`; ignore untracked `.claude/`). Commit on the existing feature branch — never the default branch — and push so the PR head advances. End the commit message with the repo's required `Co-Authored-By` trailer. Capture the short SHA for the replies:
+Run the project's checks before committing — consult the repo's `CLAUDE.md`, `README`, or package scripts to find the right commands (typical examples: test runner, linter, formatter, type-checker). Commit on the existing feature branch — never the default branch — and push so the PR head advances. If the repo requires a `Co-Authored-By` trailer or other commit-message convention, follow it. Capture the short SHA for the replies:
 
 ```bash
 SHA=$(git rev-parse --short HEAD)
