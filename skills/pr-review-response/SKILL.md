@@ -1,5 +1,7 @@
 ---
 name: pr-review-response
+author: Tommi Keskitalo <tommi.keskitalo@nitor.com>
+version: 1.0.0
 description: Respond to code-review comments on a GitHub PR end to end — fetch the unresolved threads, triage real reviewers from CI/bot noise, fix or push back with reasoning, then reply to each thread referencing the fix commit and resolve it. Use when a PR has review comments to work through (a "review round"), the user says reviewers commented / the bot left notes / "address the review", or asks to resolve review conversations. Uses the gh CLI + GitHub GraphQL.
 ---
 
