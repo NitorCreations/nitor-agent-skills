@@ -1,7 +1,7 @@
 ---
 name: pr-review-response
 author: Tommi Keskitalo <tommi.keskitalo@nitor.com>
-version: 1.0.0
+version: 1.0.1
 description: Respond to code-review comments on a GitHub PR end to end — fetch the unresolved threads, triage real reviewers from CI/bot noise, fix or push back with reasoning, then reply to each thread referencing the fix commit and resolve it. Use when a PR has review comments to work through (a "review round"), the user says reviewers commented / the bot left notes / "address the review", or asks to resolve review conversations. Uses the gh CLI + GitHub GraphQL.
 ---
 
@@ -86,7 +86,7 @@ SHA=$(git rev-parse --short HEAD)
 
 ## 6. Reply to each thread, then conditionally resolve
 
-Reply on every actionable thread (note the `/replies` sub-resource keyed by the comment `databaseId`), citing the commit. **Every reply body must end with the trailer ` | by :robot_face: agent`** so reviewers can tell at a glance the reply came from an agent, not a human. One reply per thread:
+Reply on every actionable thread (note the `/replies` sub-resource keyed by the comment `databaseId`), citing the commit. **Every reply body must end with the trailer ` | by :robot: agent`** so reviewers can tell at a glance the reply came from an agent, not a human. One reply per thread:
 
 ```bash
 gh api repos/$OWNER/$REPO/pulls/$PR/comments/<COMMENT_DATABASE_ID>/replies \
