@@ -30,22 +30,6 @@ the report from scratch — it does not read, reuse, or carry over a previous au
 If the user didn't say, ask which lens (see Lens Packs below). One report = one lens.
 Name the output `COMPLEXITY_AUDIT.md`, `QUALITY_AUDIT.md`, `SECURITY_AUDIT.md`, etc.
 
-## Pre-step — Back up any prior audit
-
-Before doing anything else, glob for an existing `<LENS>_AUDIT.md` (and any other `*_AUDIT.md`
-that this run would overwrite). This run always writes a fresh report from scratch, so the old
-file will be lost unless preserved.
-
-- **If no prior file exists**, proceed straight to the method.
-- **If a prior file is found, ask the user whether to keep it.**
-  - **No** → skip the backup; the old file is overwritten by the fresh audit.
-  - **Yes** → ask which naming convention to use for the backup (e.g. `<LENS>_AUDIT.bak.md`,
-    `<LENS>_AUDIT.<date>.md`, `<LENS>_AUDIT.v2.md`, or a name the user gives), then copy/rename
-    the prior file to that name before writing the new report.
-
-Do not read the prior audit's contents for analysis either way — backing it up only preserves
-the file; the new audit is still produced from scratch (see Hard rules).
-
 ## The method
 
 1. **Survey.** Get the shape before diving in — adapt commands to the project's language(s):
@@ -62,7 +46,8 @@ the file; the new audit is still produced from scratch (see Hard rules).
      and CI workflows. Identify the stack first; everything below adapts to it.
    - **Capture a metrics baseline** (see report skeleton): test-coverage % if the tool reports it,
      total source LOC, dependency count, and the lens's key signal count (e.g. type suppressions).
-     These numbers make a later re-audit show a measurable delta, not just prose.
+     Captured consistently each run, these numbers let a reader compare report versions in git
+     for a measurable delta, not just prose — without this run needing to read the prior audit.
 2. **Check for context docs FIRST.** Glob `*.md` for `AGENTS.md`, `CLAUDE.md`, `DESIGN.md`,
    `ARCHITECTURE.md`. Read them. **Cross-reference, never duplicate** — if an item is already
    tracked there, point at it instead of re-listing it. State this in the report's intro.
@@ -189,9 +174,9 @@ level (A/AA/AAA) + severity.
 - **Read-only on source.** Read-only analysis is fine — running linters, type-checkers, security
   scanners, dependency/coverage tools, and `git` history queries (step 3) is expected. But never
   mutate: no `--fix`/autoformat, no edits to source, no installs that change lockfiles, no commits.
-  The only files you write are `*_AUDIT.md` reports (the fresh report, plus a backup copy of a
-  prior audit if the user opts in — see the pre-step). End by offering to implement fixes as a
-  separate, explicit step.
+  The only file you write is the `*_AUDIT.md` report. A prior audit of the same lens is simply
+  overwritten — git history preserves the old version, so no backup is needed. End by offering
+  to implement fixes as a separate, explicit step.
 - **Evidence over assertion.** Every finding cites `file:line`. Don't claim a bug you haven't
   located in the code.
 - **Be honest both ways.** Include a "what's genuinely good" section; don't manufacture
