@@ -28,6 +28,7 @@ Once installed, skills are automatically available to your agent. Invoke them by
 
 ## Available skills
 
+- **codebase-audit** – Produce a rated, prioritized written audit of an existing codebase and save it to a `*_AUDIT.md` report. Supports lens-focused audits for complexity, quality, security, testing, performance, and accessibility
 - **npm-supply-chain-audit** – Audit and fix npm supply-chain security issues. Checks for missing protections (lockfile, lifecycle scripts, release-age cooldown, and more) and applies fixes after confirmation. Supports npm, pnpm, Yarn, Bun, and Aube
 - **pr-review-response** – Respond to code-review comments on a GitHub PR end to end. Fetches unresolved threads, triages real reviewers from CI/bot noise, applies fixes or pushes back with reasoning, then replies referencing the fix commit and resolves each thread. Uses the gh CLI + GitHub GraphQL.
 
