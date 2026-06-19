@@ -6,15 +6,16 @@ description: >
   smells / complexity / issues", or "assess quality / security / test coverage / performance"
   of a whole project — NOT a single diff or PR (use a diff-level review skill for that). Takes a LENS
   argument: complexity | architecture | quality | security | testing | performance | a11y (default: ask).
-  Read-only on source: it catalogs, rates, plans, and tracks finding status in the report — it
-  never edits source.
+  Read-only on source: it catalogs, rates, and plans in the report — it never edits source.
+  Each run writes a fresh report from scratch, overwriting any prior audit of the same lens.
 ---
 
 # Codebase Audit
 
 A read-only harness that turns "audit this project" into a consistent, scannable
 `*_AUDIT.md` report: findings with `file:line` evidence, a rating, a one-line fix, a
-prioritized execution order, and a verification plan.
+prioritized execution order, and a verification plan. Every run starts fresh and rewrites
+the report from scratch — it does not read, reuse, or carry over a previous audit.
 
 ## When to use / not use
 
@@ -28,6 +29,22 @@ prioritized execution order, and a verification plan.
 
 If the user didn't say, ask which lens (see Lens Packs below). One report = one lens.
 Name the output `COMPLEXITY_AUDIT.md`, `QUALITY_AUDIT.md`, `SECURITY_AUDIT.md`, etc.
+
+## Pre-step — Back up any prior audit
+
+Before doing anything else, glob for an existing `<LENS>_AUDIT.md` (and any other `*_AUDIT.md`
+that this run would overwrite). This run always writes a fresh report from scratch, so the old
+file will be lost unless preserved.
+
+- **If no prior file exists**, proceed straight to the method.
+- **If a prior file is found, ask the user whether to keep it.**
+  - **No** → skip the backup; the old file is overwritten by the fresh audit.
+  - **Yes** → ask which naming convention to use for the backup (e.g. `<LENS>_AUDIT.bak.md`,
+    `<LENS>_AUDIT.<date>.md`, `<LENS>_AUDIT.v2.md`, or a name the user gives), then copy/rename
+    the prior file to that name before writing the new report.
+
+Do not read the prior audit's contents for analysis either way — backing it up only preserves
+the file; the new audit is still produced from scratch (see Hard rules).
 
 ## The method
 
@@ -46,12 +63,11 @@ Name the output `COMPLEXITY_AUDIT.md`, `QUALITY_AUDIT.md`, `SECURITY_AUDIT.md`, 
    - **Capture a metrics baseline** (see report skeleton): test-coverage % if the tool reports it,
      total source LOC, dependency count, and the lens's key signal count (e.g. type suppressions).
      These numbers make a later re-audit show a measurable delta, not just prose.
-2. **Check for existing audit docs FIRST.** Glob `*.md` for `AGENTS.md`, `CLAUDE.md`, `DESIGN.md`,
-   `ARCHITECTURE.md`, prior `*_AUDIT.md`. Read them. **Cross-reference, never duplicate** —
-   if an item is already tracked there, point at it instead of re-listing it. State this in
-   the report's intro. If a prior `<LENS>_AUDIT.md` exists, treat its findings as the baseline:
-   re-check each still-`Open` one against current code, flip fixed ones to `Resolved` and gone
-   ones to `Deprecated` (keep the IDs), then add new findings with fresh IDs.
+2. **Check for context docs FIRST.** Glob `*.md` for `AGENTS.md`, `CLAUDE.md`, `DESIGN.md`,
+   `ARCHITECTURE.md`. Read them. **Cross-reference, never duplicate** — if an item is already
+   tracked there, point at it instead of re-listing it. State this in the report's intro.
+   **Ignore any prior `*_AUDIT.md`** — do not read it or treat it as a baseline. This run
+   produces a brand-new audit; if a `<LENS>_AUDIT.md` already exists it is overwritten wholesale.
 3. **Run the project's own analyzers first.** Before (or alongside) reading code, run whatever
    static analysis the stack already has and fold the real output into findings — a tool hit is
    reproducible signal, stronger than model judgment. Use what's installed: `eslint`, `tsc --noEmit`,
@@ -87,16 +103,15 @@ Name the output `COMPLEXITY_AUDIT.md`, `QUALITY_AUDIT.md`, `SECURITY_AUDIT.md`, 
 > Scope & confidence: what was examined in full vs. sampled vs. not looked at, which analyzers
 >   ran, and a false-positive caveat. Don't imply coverage you didn't achieve.
 
-## Metrics baseline          (coverage %, source LOC, dep count, lens signal counts — for re-audit deltas)
+## Metrics baseline          (coverage %, source LOC, dep count, lens signal counts)
 
 ## How to read the ratings   (the rubric — define every scale explicitly)
 
-## Summary table            (sorted by priority; columns vary by lens — include a Status column)
+## Summary table            (sorted by priority; columns vary by lens)
 
 ## Findings                 (grouped by priority/severity)
-  ### <ID> — <title>   file:line   [Status: Open]
+  ### <ID> — <title>   file:line
   Smell · Why it matters · Proposal · Steps · Effort/Rating
-  Resolution (filled in when resolved/deprecated: what changed, commit/PR ref, date)
 
 ## What's genuinely good    (verified strengths — keep the report honest & balanced)
 
@@ -169,36 +184,18 @@ Cross-reference any `DESIGN.md` WCAG section. Dimensions: lint enforcement (jsx-
 focus management on dismiss/close, alt/aria/roles, contrast, keyboard nav. **Rating:** WCAG
 level (A/AA/AAA) + severity.
 
-## Keeping the audit current (a living document)
-
-The `*_AUDIT.md` is not write-once — it is the source of truth that planning and later sessions
-reference. Whoever resolves findings (this skill in a follow-up run, another skill, or the user)
-keeps it accurate. Principles:
-
-- **Every finding carries a status.** One of: `Open` (default), `In Progress`, `Resolved`,
-  `Accepted` (a deliberate decision NOT to fix — record the rationale on the Resolution line),
-  `Deprecated` (no longer applies — code moved/removed, decision reversed, or it was a false
-  positive). Status lives on the finding heading and in the summary table's Status column.
-- **Resolve one finding at a time, then mark it.** Don't batch-flip statuses. As each finding is
-  actually fixed (and verified), set its status to `Resolved` and fill its **Resolution** line:
-  what changed, the commit/PR reference, and the date. This keeps the doc trustworthy as a ledger.
-- **Never delete a resolved or deprecated finding** — change its status and keep the entry. The
-  history of what was found and how it was closed is the value; deleting it loses the audit trail.
-  Keep the ID stable so PRs and other docs that reference it don't break.
-- **Reflect status at the top.** Keep the summary table current and add a one-line tally (e.g.
-  `12 findings: 3 resolved, 1 deprecated, 8 open`) so a reader sees progress without scrolling.
-- **Stay read-only on source.** Tracking status means editing the `*_AUDIT.md` only. Fixing the
-  code itself is still a separate, explicit step (see Hard rules).
-
 ## Hard rules
 
 - **Read-only on source.** Read-only analysis is fine — running linters, type-checkers, security
   scanners, dependency/coverage tools, and `git` history queries (step 3) is expected. But never
   mutate: no `--fix`/autoformat, no edits to source, no installs that change lockfiles, no commits.
-  The only file you write is the `*_AUDIT.md` report. End by offering to implement fixes as a
+  The only files you write are `*_AUDIT.md` reports (the fresh report, plus a backup copy of a
+  prior audit if the user opts in — see the pre-step). End by offering to implement fixes as a
   separate, explicit step.
 - **Evidence over assertion.** Every finding cites `file:line`. Don't claim a bug you haven't
   located in the code.
 - **Be honest both ways.** Include a "what's genuinely good" section; don't manufacture
   findings to pad the report, and don't soften a real one.
 - **Don't repeat existing docs.** Cross-reference them.
+- **Always start fresh.** Never read or carry over a prior `*_AUDIT.md`. Write the report from
+  scratch each run, overwriting any existing audit of the same lens.
