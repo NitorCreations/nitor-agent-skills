@@ -28,7 +28,8 @@ the report from scratch — it does not read, reuse, or carry over a previous au
 ## Step 0 — Pick the lens
 
 If the user didn't say, ask which lens (see Lens Packs below). One report = one lens.
-Name the output `COMPLEXITY_AUDIT.md`, `QUALITY_AUDIT.md`, `SECURITY_AUDIT.md`, etc.
+Name the output `docs/COMPLEXITY_AUDIT.md`, `docs/QUALITY_AUDIT.md`, `docs/SECURITY_AUDIT.md`, etc.
+Create the `docs/` directory if it does not exist.
 
 ## The method
 
@@ -51,8 +52,8 @@ Name the output `COMPLEXITY_AUDIT.md`, `QUALITY_AUDIT.md`, `SECURITY_AUDIT.md`, 
 2. **Check for context docs FIRST.** Glob `*.md` for `AGENTS.md`, `CLAUDE.md`, `DESIGN.md`,
    `ARCHITECTURE.md`. Read them. **Cross-reference, never duplicate** — if an item is already
    tracked there, point at it instead of re-listing it. State this in the report's intro.
-   **Ignore any prior `*_AUDIT.md`** — do not read it or treat it as a baseline. This run
-   produces a brand-new audit; if a `<LENS>_AUDIT.md` already exists it is overwritten wholesale.
+   **Ignore any prior `docs/*_AUDIT.md`** — do not read it or treat it as a baseline. This run
+   produces a brand-new audit; if a `docs/<LENS>_AUDIT.md` already exists it is overwritten wholesale.
 3. **Run the project's own analyzers first.** Before (or alongside) reading code, run whatever
    static analysis the stack already has and fold the real output into findings — a tool hit is
    reproducible signal, stronger than model judgment. Use what's installed: `eslint`, `tsc --noEmit`,
@@ -79,7 +80,7 @@ Name the output `COMPLEXITY_AUDIT.md`, `QUALITY_AUDIT.md`, `SECURITY_AUDIT.md`, 
    commands, any visual/manual checks the stack supports (e.g. Storybook or visual diffs for UI),
    and any lens-specific reproduction (e.g. for a prod-only bug, how to reproduce it locally).
 
-## Report skeleton (write this to `<LENS>_AUDIT.md`)
+## Report skeleton (write this to `docs/<LENS>_AUDIT.md`)
 
 ```
 # <Lens> Audit
@@ -174,7 +175,7 @@ level (A/AA/AAA) + severity.
 - **Read-only on source.** Read-only analysis is fine — running linters, type-checkers, security
   scanners, dependency/coverage tools, and `git` history queries (step 3) is expected. But never
   mutate: no `--fix`/autoformat, no edits to source, no installs that change lockfiles, no commits.
-  The only file you write is the `*_AUDIT.md` report. A prior audit of the same lens is simply
+  The only file you write is the `docs/*_AUDIT.md` report. A prior audit of the same lens is simply
   overwritten — git history preserves the old version, so no backup is needed. End by offering
   to implement fixes as a separate, explicit step.
 - **Evidence over assertion.** Every finding cites `file:line`. Don't claim a bug you haven't
@@ -182,5 +183,5 @@ level (A/AA/AAA) + severity.
 - **Be honest both ways.** Include a "what's genuinely good" section; don't manufacture
   findings to pad the report, and don't soften a real one.
 - **Don't repeat existing docs.** Cross-reference them.
-- **Always start fresh.** Never read or carry over a prior `*_AUDIT.md`. Write the report from
-  scratch each run, overwriting any existing audit of the same lens.
+- **Always start fresh.** Never read or carry over a prior `docs/*_AUDIT.md`. Write the report from
+  scratch each run, overwriting any existing `docs/<LENS>_AUDIT.md`.
