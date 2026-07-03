@@ -25,7 +25,9 @@ Setup — every Bash call is a fresh shell; resolve OWNER/REPO/PR/SHA once, then
                               EXPLICIT paths (never git add -A: sweeps unrelated
                               worktree files invisible to the diff-stat gate),
                               commit on feature branch, push, capture short SHA.
-8. Reply + resolve          — re-check staleness. Fix reply cites commit; pushback
+8. Reply + resolve          — re-check staleness (human change → halt; bot
+                              auto-resolving its OWN thread = expected, continue).
+                              Fix reply cites commit; pushback
                               reply carries reasoning (no SHA). Resolve only if no
                               human participated, judged from PRE-reply snapshot
                               ([bot]-suffix = robust test).
@@ -166,7 +168,9 @@ git rev-parse --short HEAD
 
 ## 8. Reply to each thread, then conditionally resolve
 
-**Re-check before acting.** Real time has passed since the snapshot fetched in *Fetch reviews and unresolved threads* — implementing, verifying, and waiting on the *Confirm before executing* gate can each take a while, and a reviewer may have posted, edited, or (un)resolved something in the meantime. Re-run that query, or at least re-check the threads you're about to touch, before replying or resolving. If anything material changed — a new comment, a thread that's now resolved, an author list that now includes a human where it didn't — stop and flag it to the user instead of proceeding against stale data.
+**Re-check before acting.** Real time has passed since the snapshot fetched in *Fetch reviews and unresolved threads* — implementing, verifying, and waiting on the *Confirm before executing* gate can each take a while, and a reviewer may have posted, edited, or (un)resolved something in the meantime. Re-run that query (fetch resolved threads too, not just `isResolved == false` — a thread that vanished from the unresolved set was resolved, not deleted), or at least re-check the threads you're about to touch, before replying or resolving.
+
+If a **human** changed something — a new human comment, a human resolved a thread, an author list that now includes a person where it didn't — stop and flag it to the user instead of proceeding against stale data. But **one change is expected and benign, so don't halt on it**: a bot (Copilot especially) auto-resolving its *own* bot-only thread once your push addressed the suggestion. That's the outcome you wanted — note it and carry on; that thread's resolve step is simply already done. Replying on an already-resolved bot thread is optional (a reply doesn't reopen it): cite the commit if you want it on record, otherwise skip it — the re-run-safety trailer isn't needed on a thread that's already resolved and won't reappear.
 
 Reply on every actionable thread (note the `/replies` sub-resource keyed by the comment `databaseId`). A **fix** reply cites the commit; a **diverge/push-back** reply carries the reasoning and cites no SHA (there may not be one — see the zero-fix note in *Commit and push*). One reply per thread.
 
