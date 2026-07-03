@@ -21,8 +21,10 @@ Setup — every Bash call is a fresh shell; resolve OWNER/REPO/PR/SHA once, then
                               run local checks.
 6. Confirm                  — single go/no-go gate: decisions + real diff --stat +
                               who gets re-requested. Detail scales to diff size.
-7. Commit & push            — zero-fix round → SKIP entirely (no SHA). Else commit
-                              on feature branch, push, capture short SHA.
+7. Commit & push            — zero-fix round → SKIP entirely (no SHA). Else stage
+                              EXPLICIT paths (never git add -A: sweeps unrelated
+                              worktree files invisible to the diff-stat gate),
+                              commit on feature branch, push, capture short SHA.
 8. Reply + resolve          — re-check staleness. Fix reply cites commit; pushback
                               reply carries reasoning (no SHA). Resolve only if no
                               human participated, judged from PRE-reply snapshot
@@ -136,7 +138,7 @@ This is the one gate before anything touches the shared PR. Nothing commits, pus
 Always include:
 
 - One line per actionable thread: the comment, the decision (fix / diverge / push back), and — for fixes — what actually changed.
-- The real diff stat (e.g. `git diff --stat`) for what *Implement and verify* produced — the actual result, not a description of intent.
+- The real diff stat (e.g. `git diff --stat`) for what *Implement and verify* produced — the actual result, not a description of intent. `git diff --stat` omits untracked files, so also glance at `git status --short`: if new/unrelated files (build artifacts, scratch, screenshots) are present, name the exact files you intend to commit here so the user approves the precise set, not "whatever's in the worktree."
 - Which human reviewers will be re-requested once execution finishes — a notification landing in someone else's inbox belongs in what's being approved, not something *Re-request review* does silently afterward.
 
 Then scale the level of detail to what the diff actually looks like:
@@ -151,6 +153,8 @@ Either way, ask one go/no-go question via AskUserQuestion — options along the 
 **Zero-fix round?** If the round had no accepted fixes (all diverge/push back), there is nothing to commit — skip this entire step. There is no new `SHA`; the replies in the next step cite reasoning, not a commit. Go straight to *Reply to each thread*.
 
 Otherwise, commit on the existing feature branch — never the default branch — and push so the PR head advances. If the repo requires a `Co-Authored-By` trailer or other commit-message convention, follow it.
+
+**Stage explicitly — never `git add -A` / `git add .`.** This skill routinely runs while unrelated work sits in the worktree (a paused task, stray build artifacts, scratch files). Stage only the exact paths you edited in *Implement and verify*, by name (`git add path/one path/two`). A blanket add sweeps untracked and unrelated files into the PR — and because the *Confirm before executing* diff stat is built from `git diff` (which does **not** list untracked files), those extras are invisible at the moment the user approves, then land in the pushed commit and need an amend + force-push to undo. The committed set must match, file-for-file, the diff the user approved.
 
 If committing or pushing fails (e.g. a hook rejects the commit, or the remote moved), stop and report it to the user — don't skip hooks, force-push, or retry blindly. Fix the root cause and re-run this step.
 
