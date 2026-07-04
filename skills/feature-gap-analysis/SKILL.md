@@ -1,7 +1,7 @@
 ---
 name: feature-gap-analysis
 description: >
-  Fan out across the entire application, map every user path and data field, find what
+  Fan out across the entire frontend, map every user path and data field, find what
   is fetched/modelled but never rendered, identify missing features expected by consistency
   or convention, rank all gaps by user impact, and produce a self-contained HTML report
   with a mind map and prioritized gap cards. Adapts its fan-out to the project's actual
@@ -22,9 +22,12 @@ fields, and ranked gap cards with file references and proposed fixes.
 ## When to use / not use
 
 - **Use** when you want a broad survey of missing features, inconsistencies, and
-  data that is fetched but never displayed — across a whole frontend or full-stack app.
+  data that is fetched but never displayed — across a whole frontend (in a full-stack
+  repo, the frontend of it).
 - **Don't use** for a single component review, a PR diff, or a security/performance
-  audit (use the `codebase-audit` skill with the relevant lens for those).
+  audit (use the `codebase-audit` skill with the relevant lens for those). Backend code
+  is out of scope except as the source of what the frontend fetches — surveying backend
+  endpoints that exist but are never called from the UI is not this skill's job.
 - **Output:** `docs/GAP_ANALYSIS.html` — self-contained, no dependencies, opens directly
   in any browser.
 
@@ -32,8 +35,8 @@ fields, and ranked gap cards with file references and proposed fixes.
 
 ## Step 0 — Orientation
 
-**Identify the stack first.** Read `package.json` (or the equivalent manifest for a
-full-stack app) to see which frontend framework is in play — React/Next.js, Vue/Nuxt,
+**Identify the stack first.** Read `package.json` (in a monorepo or full-stack repo, the
+frontend package's manifest) to see which frontend framework is in play — React/Next.js, Vue/Nuxt,
 Angular, Svelte/SvelteKit, or something else. This determines the vocabulary and file
 globs for the rest of this skill: "hooks" for React, "composables" for Vue, "services"/
 "stores" for Angular, and so on. Adapt every glob below and every agent brief in Step 1
