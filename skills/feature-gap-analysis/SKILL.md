@@ -55,7 +55,19 @@ find . -path ./node_modules -prune -o \( -name "*.ts" -o -name "*.tsx" -o -name 
 ```
 
 Read `CLAUDE.md`, `AGENTS.md`, `DESIGN.md`, `ARCHITECTURE.md` if they exist — these
-tell you which conventions are intentional vs. gaps.
+tell you which conventions are intentional vs. gaps. These four are a floor, not a
+ceiling: also look for other docs that record deliberate decisions.
+
+```bash
+# Other docs that might record intentional decisions (ADRs, RFCs, design notes) —
+# beyond the four canonical files already checked above
+find . -path ./node_modules -prune -o -iname "*.md" -print \
+  | grep -viE "node_modules|CHANGELOG|LICENSE" \
+  | grep -iE "adr|decision|rfc|design|/docs/" | head -20
+```
+
+Read any hits before Step 1 so agents can route a matching finding to "Acknowledged, not
+actioned" (Step 3) instead of reporting it as a gap.
 
 ---
 
@@ -88,6 +100,13 @@ Spawn all four as `Explore`-type agents (read-only — this skill never edits so
 PARALLEL in a single message; don't overlap their scopes. Each brief below uses React
 terms as the default vocabulary — substitute the equivalent for the stack identified in
 Step 0 (e.g. "hooks" → "composables" for Vue, "services"/stores for Angular).
+
+**All four agents**, while reading, must also flag any comment, docstring, or nearby doc
+reference that marks what looks like a gap as deliberate — `// intentional`, `// by
+design`, an `eslint-disable` line with a justification, a `TODO` explaining why something
+is deliberately left as-is, or a link to an ADR/design doc. Report these alongside the
+finding they apply to, not as a separate list — Step 3 routes a finding with this kind of
+evidence to "Acknowledged, not actioned" instead of ranking it as a gap.
 
 ### Agent A — Pages & routing
 
@@ -235,10 +254,12 @@ Tag each gap with a **category**, orthogonal to priority:
   (orphaned exports/fields, dead code, type mismatches, duplicated logic). Orphaned-data
   findings from 2a are almost always Code quality by default.
 
-A gap that turns out to be an intentional product decision (confirmed via `CLAUDE.md`/
-`DESIGN.md`, a code comment, or asking the user) doesn't get a priority, number, or
-category — move it to the "Acknowledged, not actioned" section instead (Step 4) so it
-stays visible without cluttering the ranked list.
+A gap that turns out to be an intentional product decision — confirmed via a project doc
+found in Step 0 (`CLAUDE.md`/`AGENTS.md`/`DESIGN.md`/`ARCHITECTURE.md` or another doc
+discovered there), an in-code comment a Step 1 agent flagged, or asking the user directly
+— doesn't get a priority, number, or category. Move it to the "Acknowledged, not
+actioned" section instead (Step 4) so it stays visible without cluttering the ranked
+list.
 
 ---
 
