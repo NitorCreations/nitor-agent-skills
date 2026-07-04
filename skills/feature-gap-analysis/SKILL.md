@@ -43,14 +43,14 @@ Then do a rapid structural survey yourself:
 
 ```bash
 # Route / page files — adjust the extension(s) to the detected stack
-find . -path ./node_modules -prune -o \( -name "*.tsx" -o -name "*.vue" -o -name "*.svelte" \) -print \
+find . -name node_modules -prune -o \( -name "*.tsx" -o -name "*.vue" -o -name "*.svelte" \) -print \
   | grep -E "/(app|pages|routes|views)/" | head -40
 
 # Top-level structure
 ls -1
 
 # Source file count — adjust extensions to the detected stack
-find . -path ./node_modules -prune -o \( -name "*.ts" -o -name "*.tsx" -o -name "*.vue" -o -name "*.svelte" \) -print \
+find . -name node_modules -prune -o \( -name "*.ts" -o -name "*.tsx" -o -name "*.vue" -o -name "*.svelte" \) -print \
   | grep -vE "node_modules|\.next|stories|__tests__" | wc -l
 ```
 
@@ -61,7 +61,7 @@ ceiling: also look for other docs that record deliberate decisions.
 ```bash
 # Other docs that might record intentional decisions (ADRs, RFCs, design notes) —
 # beyond the four canonical files already checked above
-find . -path ./node_modules -prune -o -iname "*.md" -print \
+find . -name node_modules -prune -o -iname "*.md" -print \
   | grep -viE "node_modules|CHANGELOG|LICENSE" \
   | grep -iE "adr|decision|rfc|design|/docs/" | head -20
 ```
@@ -94,12 +94,20 @@ report's scope/confidence line (Step 4).
 
 ---
 
-## Step 1 — Parallel fan-out (4 agents)
+## Step 1 — Parallel fan-out (4 roles)
 
 Spawn all four as `Explore`-type agents (read-only — this skill never edits source), IN
 PARALLEL in a single message; don't overlap their scopes. Each brief below uses React
 terms as the default vocabulary — substitute the equivalent for the stack identified in
 Step 0 (e.g. "hooks" → "composables" for Vue, "services"/stores for Angular).
+
+**Scale the fan-out to the file counts from Step 0.** The four scopes below are roles,
+not a fixed agent count: if a single role's scope exceeds roughly 150–200 files, split
+that role by directory into parallel sub-agents (B1: `components/product`, B2:
+`components/admin`, ...) rather than letting one agent sample silently. If sampling is
+still unavoidable, pick a stated rule (e.g. every page plus the N most-imported
+components) and record it in that agent's coverage line — never imply full coverage that
+didn't happen.
 
 **All four agents**, while reading, must also flag any comment, docstring, or nearby doc
 reference that marks what looks like a gap as deliberate — `// intentional`, `// by
@@ -139,7 +147,9 @@ Read every page/route file. For each, report:
 
 ### Agent B — Components & UI
 
-Read every component file (product, layout, admin, ui subdirectories). For each:
+Read every component file (product, admin, ui subdirectories) — **excluding**
+header/footer/layout/navigation/auth chrome, which Agent D owns; don't report on those
+files even in passing. For each:
 
 - What data props/hooks it uses
 - What user interactions it supports
@@ -233,8 +243,9 @@ full accessibility audit here.
 **Don't let zero ARIA findings pass silently.** If none of the Step 1 agents surfaced an
 accessibility gap, that's more often a sign the agents weren't asked to look than that
 the app is clean — verify it yourself with a quick grep for custom interactive elements
-(`<div onClick`, `role=`, custom `Modal`/`Dialog`/`Dropdown` components) before concluding
-there's nothing to report under #3/#9.
+(`<div onClick` — or the stack's equivalent: `@click` for Vue, `on:click` for Svelte,
+`(click)` for Angular — plus `role=` and custom `Modal`/`Dialog`/`Dropdown` components)
+before concluding there's nothing to report under #3/#9.
 
 ### 2d — Data used partially
 
@@ -294,9 +305,12 @@ establishes is contradicted. Don't adjust one to make the other "fit".
 
 A gap that turns out to be an intentional product decision — confirmed via a project doc
 found in Step 0 (`CLAUDE.md`/`AGENTS.md`/`DESIGN.md`/`ARCHITECTURE.md` or another doc
-discovered there), an in-code comment a Step 1 agent flagged, or asking the user directly
-— doesn't get a priority, number, or type. Move it to the "Acknowledged, not actioned"
-section instead (Step 4) so it stays visible without cluttering the ranked list.
+discovered there) or an in-code comment a Step 1 agent flagged — doesn't get a priority,
+number, or type. Move it to the "Acknowledged, not actioned" section instead (Step 4) so
+it stays visible without cluttering the ranked list. If you merely *suspect* a gap is
+intentional but nothing documents it, keep it in the ranked list with the suspicion noted
+on the card and raise it with the user at Step 5 — don't interrupt the analysis to ask,
+and don't silently drop it.
 
 ---
 
@@ -305,9 +319,20 @@ section instead (Step 4) so it stays visible without cluttering the ranked list.
 Write a single self-contained HTML file to `docs/GAP_ANALYSIS.html`, creating the `docs/`
 directory if it doesn't exist. No external dependencies — all CSS inline in a `<style>` block.
 
+**Build the file incrementally, not in one giant write.** Long single-pass generations
+degrade in their later sections. Write the shell first (head, styles, sticky header,
+summary bar), then append each section as a separate operation — mind map, data-flow
+table, one priority section at a time, orphaned data, acknowledged table, closing tags.
+Then run the "Quality checks before finishing" against the assembled file on disk, not
+against your memory of writing it.
+
 **Always start fresh.** If `docs/GAP_ANALYSIS.html` already exists, do not read it or
-treat it as a baseline — this run's findings come only from the current codebase.
-Overwrite it wholesale; git history preserves the old version, so no backup is needed.
+treat it as a baseline — this run's findings come only from the current codebase. Delete
+it first (`rm docs/GAP_ANALYSIS.html`), then write the new report from scratch. It's a
+generated artifact, not source, and git history preserves the old version, so no backup
+is needed. Deleting first also matters mechanically: the Write tool refuses to overwrite
+a file it hasn't read this session, and reading the old report is exactly what this rule
+forbids.
 
 ### Required sections
 
@@ -400,7 +425,10 @@ Follow these conventions:
   "Acknowledged, not actioned" section — none are silently dropped
 - No gap is filed as an issue without first checking if it's already tracked
   (`gh issue list --search "keyword"`)
-- The HTML opens cleanly in a browser with no console errors
+- The assembled HTML is verified mechanically against itself: summary-bar counts equal
+  the number of rendered gap cards per priority and per type, every TOC/jump link points
+  at an existing section id, every G-number appears exactly once as a card, and the file
+  ends with its closing tags (no truncated final section)
 - P1 gaps are never bundled away — each P1 gets its own issue or is the lead item
   in a bundle
 - Every gap card, in every priority section from P1 through P4, has a numbered circle and
