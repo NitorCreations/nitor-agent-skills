@@ -246,20 +246,32 @@ across the entire ranked list — continuous across priority boundaries, not res
 P2/P3/P4. This is the number readers use to reference a specific gap ("issue 6"), so it
 must stay stable and unique regardless of which priority section the gap sits in.
 
-Tag each gap with a **category**, orthogonal to priority:
+Tag each gap with a **type**, orthogonal to priority — this answers "what kind of finding
+is this" separately from "how urgent is it":
 
-- **User-facing** — a real user would perceive the difference once fixed (UI, content,
-  behavior, accessibility).
-- **Code quality** — internal-only cleanup with no visible UI change even after fixing
-  (orphaned exports/fields, dead code, type mismatches, duplicated logic). Orphaned-data
-  findings from 2a are almost always Code quality by default.
+- **Bug** — behavior contradicts something the app itself establishes elsewhere: a state
+  handled on a parallel surface but not here (2b/2d), a broken/blank error or loading
+  state, a dead-end action, an accessibility violation. Objectively wrong, not a matter of
+  taste. Every P1 is a Bug by definition (Step 3's P1 criteria already requires a broken
+  workflow).
+- **Code quality** — internal-only cleanup with no visible behavior change even after
+  fixing (orphaned exports/fields, dead code, type mismatches, duplicated logic).
+  Orphaned-data findings from 2a are almost always Code quality by default.
+- **Enhancement** — nothing is broken; the app would simply be more complete, efficient,
+  or polished with the addition (bulk actions, shortcuts, extra convenience the app
+  doesn't establish or promise elsewhere). Most convention gaps (2c) that aren't tied to a
+  broken state land here.
+
+The Bug/Enhancement line isn't always sharp. When genuinely unsure, default to
+Enhancement rather than Bug — the same evidence-over-assertion bar applies here as
+everywhere else in this skill: don't call something a Bug unless you can point to the
+specific established pattern or broken state it contradicts.
 
 A gap that turns out to be an intentional product decision — confirmed via a project doc
 found in Step 0 (`CLAUDE.md`/`AGENTS.md`/`DESIGN.md`/`ARCHITECTURE.md` or another doc
 discovered there), an in-code comment a Step 1 agent flagged, or asking the user directly
-— doesn't get a priority, number, or category. Move it to the "Acknowledged, not
-actioned" section instead (Step 4) so it stays visible without cluttering the ranked
-list.
+— doesn't get a priority, number, or type. Move it to the "Acknowledged, not actioned"
+section instead (Step 4) so it stays visible without cluttering the ranked list.
 
 ---
 
@@ -275,7 +287,7 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
 ### Required sections
 
 1. **Summary bar** — four cells: P1 count / P2 count / P3 count / P4 count with colour
-   coding, a second row with User-facing count / Code quality count, plus a one-line
+   coding, a second row with Bug count / Code quality count / Enhancement count, plus a one-line
    scope/confidence note (stack detected, what was covered in full vs. sampled) so the
    report doesn't imply coverage it didn't achieve.
 
@@ -300,7 +312,7 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
    - "What exists" block (grey inset — what's already there so readers understand context)
    - Description (why this matters, what the user experience is; for P1 cards, this must
      name the specific workflow and step that's blocked, per Step 3)
-   - Meta badges (affected files, user impact label, category: User-facing or Code quality)
+   - Meta badges (affected files, user impact label, type: Bug / Code quality / Enhancement)
 
 5. **Orphaned data section** — grid of cards, one per orphaned field. Each shows:
    - Field path in monospace
@@ -319,8 +331,8 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
 - Colour palette: dark background for header, light grey page, white cards
 - P1 red / P2 orange / P3 blue / P4 green — consistent throughout, applied via the top
   border and rank circle on every card regardless of priority
-- Category badge uses a visually distinct style from the priority border (e.g. an outlined
-  pill vs. the solid coloured border) so priority and category never get confused
+- Type badge uses a visually distinct style from the priority border (e.g. an outlined
+  pill vs. the solid coloured border) so priority and type never get confused
 - No JavaScript required for core content; a small scroll-spy for TOC is optional
 
 ---
@@ -329,7 +341,7 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
 
 After writing the HTML, present a short summary to the user:
 
-- Total gap count by priority, and by category (User-facing vs Code quality)
+- Total gap count by priority, and by type (Bug / Code quality / Enhancement)
 - The top 3 highest-impact findings in plain text, by their global gap number
 - Ask whether to file GitHub issues (individually or bundled by theme)
 
@@ -338,8 +350,8 @@ After writing the HTML, present a short summary to the user:
 Follow these conventions:
 
 - **Bundle** gaps that touch the same files or the same user flow into one issue; prefer
-  keeping User-facing and Code quality gaps in separate issues even if they touch the
-  same file, since they likely have different reviewers/urgency
+  keeping Bug, Code quality, and Enhancement gaps in separate issues even if they touch
+  the same file, since they likely have different reviewers/urgency
 - **Separate** gaps that have different owners (frontend vs. backend, different subsystems)
 - For gaps that require a backend API change, also offer to file a corresponding issue
   in the backend/sibling repository
@@ -367,10 +379,12 @@ Follow these conventions:
 - P1 gaps are never bundled away — each P1 gets its own issue or is the lead item
   in a bundle
 - Every gap card, in every priority section from P1 through P4, has a numbered circle and
-  a category badge — no section falls back to a plain bullet list
+  a type badge — no section falls back to a plain bullet list
 - Gap numbers are unique and sequential across the whole report, not restarted per priority
 - Every P1 card's description names the specific workflow and step it blocks — a P1 with
   no named blocked workflow is a sign it should be P2
+- Every P1 is typed Bug — if a P1 doesn't fit the Bug definition, its priority is wrong,
+  not its type
 
 ---
 
