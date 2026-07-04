@@ -3,7 +3,8 @@ name: feature-gap-analysis
 description: >
   Fan out across the entire frontend, map every user path and data field, find what
   is fetched/modelled but never rendered, identify missing features expected by consistency
-  or convention, rank all gaps by user impact, and produce a self-contained HTML report
+  or convention, flag hand-rolled implementations the web platform now covers natively,
+  rank all gaps by user impact, and produce a self-contained HTML report
   with a mind map and prioritized gap cards. Adapts its fan-out to the project's actual
   frontend stack (React, Vue, Angular, Svelte, ...). Read-only on source — never edits
   files. Output is a single docs/GAP_ANALYSIS.html, plus an optional batch of GitHub
@@ -97,14 +98,14 @@ report's scope/confidence line (Step 4).
 
 ---
 
-## Step 1 — Parallel fan-out (4 roles)
+## Step 1 — Parallel fan-out (5 roles)
 
-Spawn all four as `Explore`-type agents (read-only — this skill never edits source), IN
+Spawn all five as `Explore`-type agents (read-only — this skill never edits source), IN
 PARALLEL in a single message; don't overlap their scopes. Each brief below uses React
 terms as the default vocabulary — substitute the equivalent for the stack identified in
 Step 0 (e.g. "hooks" → "composables" for Vue, "services"/stores for Angular).
 
-**Scale the fan-out to the file counts from Step 0.** The four scopes below are roles,
+**Scale the fan-out to the file counts from Step 0.** The five scopes below are roles,
 not a fixed agent count: if a single role's scope exceeds roughly 150–200 files, split
 that role by directory into parallel sub-agents (B1: `components/product`, B2:
 `components/admin`, ...) rather than letting one agent sample silently. If sampling is
@@ -112,7 +113,7 @@ still unavoidable, pick a stated rule (e.g. every page plus the N most-imported
 components) and record it in that agent's coverage line — never imply full coverage that
 didn't happen.
 
-**All four agents**, while reading, must also flag any comment, docstring, or nearby doc
+**All five agents**, while reading, must also flag any comment, docstring, or nearby doc
 reference that marks what looks like a gap as deliberate — `// intentional`, `// by
 design`, an `eslint-disable` line with a justification, a `TODO` explaining why something
 is deliberately left as-is, or a link to an ADR/design doc. Report these alongside the
@@ -173,7 +174,7 @@ rather than re-deriving everything from a blank slate. For each:
 - All fields on every data type/entity
 - What each hook/composable/service fetches and what mutations it provides
 - Where each field is referenced *within the data layer itself* (selectors, transforms,
-  mappers). Do **not** try to determine component-level consumption — the four agents run
+  mappers). Do **not** try to determine component-level consumption — the five agents run
   in parallel, so Agent A/B's findings don't exist yet from your point of view. Matching
   fields against what components actually render is Step 2a's job, done from your
   inventory plus theirs.
@@ -189,11 +190,43 @@ Read header, footer, layout, navigation, and auth/session components. Report:
 - Whether the active nav item is exposed to assistive tech (`aria-current`), not just
   styled differently via CSS
 
+### Agent E — Platform modernization
+
+Unlike A–D, this role is defined by a **lens**, not a surface: it may touch files other
+agents also read, but asks only one question — "does the web platform now provide this
+natively?". Ground every claim in the `modern-web-guidance` CLI (a public npm package;
+runs via `npx`, read-only, no install):
+
+```sh
+npx -y modern-web-guidance@latest search "<action-oriented query>"   # find guide ids
+npx -y modern-web-guidance@latest retrieve "<id>"                    # full guide; comma-separate ids
+npx -y modern-web-guidance@latest list                               # browse all, if search is vague
+```
+
+Start from pattern smells, not from reading every file:
+
+- Custom `Modal`/`Dialog`/`Tooltip`/`Dropdown`/`Popover` components; `position: fixed` +
+  `z-index` overlay patterns (native `<dialog>`, popover, anchor positioning)
+- Hand-rolled scroll/resize listeners and `IntersectionObserver` boilerplate
+  (scroll-driven animations, `content-visibility`)
+- `package.json` dependencies that duplicate platform features (focus-trap, popper/
+  floating positioning, media-query and breakpoint libraries)
+- Form validation, autofill, and input patterns re-implemented in JS
+- Image loading without priority hints or modern formats
+
+For each smell: `search` the use case, `retrieve` the matching guide, and report the
+current implementation (`file:line`), the native primitive the guide recommends, and the
+**guide id** as the citation. No matching guide → no finding; never report a
+modernization claim from memory — stale training data is exactly what this CLI corrects.
+
+If `npx` or network access is unavailable and the CLI can't run, skip this role entirely
+and record that in the report's scope/confidence line (Step 4) — same rule as Step 0.5.
+
 ---
 
 ## Step 2 — Synthesise findings
 
-With all four agent reports in hand, cross-reference to find:
+With all five agent reports in hand, cross-reference to find:
 
 ### 2a — Orphaned data fields
 
@@ -255,6 +288,15 @@ before concluding there's nothing to report under #3/#9.
 Fields fetched and used in one context but not another where they'd be equally
 relevant (e.g. user name shown on homepage but not in header).
 
+### 2e — Modernization findings
+
+Agent E's findings pass through to ranking largely as-is — each is already self-contained
+(current implementation, native primitive, guide id). One cross-reference before ranking:
+a custom control that both lacks accessibility (Agent A/B, filed under 2c) **and** has a
+native replacement (Agent E) is one gap, not two — the native primitive usually fixes the
+ARIA gap for free (`<dialog>` brings focus management and Esc handling built in). Merge
+them into a single card citing both findings.
+
 ---
 
 ## Step 3 — Rank gaps
@@ -297,6 +339,12 @@ is this" separately from "how urgent is it":
   or polished with the addition (bulk actions, shortcuts, extra convenience the app
   doesn't establish or promise elsewhere). Most convention gaps (2c) that aren't tied to a
   broken state land here.
+- **Modernization** — works today, but reimplements what the web platform now provides
+  natively (custom modal vs `<dialog>`, JS scroll tricks vs scroll-driven animations, a
+  positioning library vs anchor positioning). Always cites a `modern-web-guidance` guide
+  id alongside the `file:line`; a modernization claim with no guide behind it doesn't get
+  filed. Distinct from Enhancement (the capability already exists) and from Code quality
+  (the fix changes user-visible behavior — usually for the better: less JS, free a11y).
 
 The Bug/Enhancement line isn't always sharp. When genuinely unsure, default to
 Enhancement rather than Bug — the same evidence-over-assertion bar applies here as
@@ -340,9 +388,10 @@ forbids.
 ### Required sections
 
 1. **Summary bar** — four cells: P1 count / P2 count / P3 count / P4 count with colour
-   coding, a second row with Bug count / Code quality count / Enhancement count, plus a one-line
-   scope/confidence note (stack detected, what was covered in full vs. sampled) so the
-   report doesn't imply coverage it didn't achieve.
+   coding, a second row with Bug count / Code quality count / Enhancement count /
+   Modernization count, plus a one-line scope/confidence note (stack detected, what was
+   covered in full vs. sampled, whether Agent E ran) so the report doesn't imply coverage
+   it didn't achieve.
 
 2. **App mind map** — visual map of every page/route with its data sources, user actions,
    and gaps called out inline (missing items in dashed red boxes). Use pure CSS/HTML —
@@ -365,7 +414,8 @@ forbids.
    - "What exists" block (grey inset — what's already there so readers understand context)
    - Description (why this matters, what the user experience is; for P1 cards, this must
      name the specific workflow and step that's blocked, per Step 3)
-   - Meta badges (affected files, user impact label, type: Bug / Code quality / Enhancement)
+   - Meta badges (affected files, user impact label, type: Bug / Code quality /
+     Enhancement / Modernization; Modernization badges also show the guide id)
 
 5. **Orphaned data section** — grid of cards, one per orphaned field. Each shows:
    - Field path in monospace
@@ -394,7 +444,7 @@ forbids.
 
 After writing the HTML, present a short summary to the user:
 
-- Total gap count by priority, and by type (Bug / Code quality / Enhancement)
+- Total gap count by priority, and by type (Bug / Code quality / Enhancement / Modernization)
 - The top 3 highest-impact findings in plain text, by their global gap number
 - Ask whether to file GitHub issues (individually or bundled by theme)
 
@@ -403,8 +453,9 @@ After writing the HTML, present a short summary to the user:
 Follow these conventions:
 
 - **Bundle** gaps that touch the same files or the same user flow into one issue; prefer
-  keeping Bug, Code quality, and Enhancement gaps in separate issues even if they touch
-  the same file, since they likely have different reviewers/urgency
+  keeping Bug, Code quality, Enhancement, and Modernization gaps in separate issues even
+  if they touch the same file, since they likely have different reviewers/urgency.
+  Modernization issues should link the `modern-web-guidance` guide id in the body
 - **Separate** gaps that have different owners (frontend vs. backend, different subsystems)
 - For gaps that require a backend API change, also offer to file a corresponding issue
   in the backend/sibling repository
@@ -439,6 +490,9 @@ Follow these conventions:
 - Gap numbers are unique and sequential across the whole report, not restarted per priority
 - Every P1 card's description names the specific workflow and step it blocks — a P1 with
   no named blocked workflow is a sign it should be P2
+- Every Modernization gap cites a `modern-web-guidance` guide id alongside its `file:line`
+- If Agent E was skipped (CLI or network unavailable), the scope/confidence line says so
+  and the Modernization count reads "not assessed", not "0"
 
 ---
 
@@ -446,7 +500,7 @@ Follow these conventions:
 
 - **Read-only on source.** Reading, running the project's own read-only tooling (e.g.
   type-checking to confirm a field's shape, `knip`/`eslint`/`graphql-inspector` per
-  Step 0.5), and `git`/`gh` queries are fine. Never edit, format, or delete source files,
+  Step 0.5, the `modern-web-guidance` CLI per Agent E), and `git`/`gh` queries are fine. Never edit, format, or delete source files,
   and never let a tool run with an autofix flag or install anything that changes the
   lockfile. The only file you write is `docs/GAP_ANALYSIS.html` (plus GitHub issues, if
   the user opts in).
