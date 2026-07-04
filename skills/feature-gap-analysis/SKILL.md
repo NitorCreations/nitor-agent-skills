@@ -59,6 +59,29 @@ tell you which conventions are intentional vs. gaps.
 
 ---
 
+## Step 0.5 — Ground-truth static analysis
+
+Before spawning agents, run whatever static tools the stack already supports. A tool hit
+is reproducible, file:line-backed evidence — it should anchor Agent C's work in Step 1
+rather than being re-derived from scratch by an agent reading files:
+
+- **JS/TS projects:** run `npx knip` (no install needed) to get unused files, unused
+  exports, and unused dependencies. Feed its output to Agent C as a starting list of
+  orphan candidates to verify and extend. Knip catches whole unused hooks/components/
+  files; it does **not** catch a field that's part of a used type but only partially
+  destructured or rendered — that finer-grained case is still Agent C's job.
+- **GraphQL APIs:** if a schema/codegen setup exists, check for an existing Hive "unused
+  schema" report or run `graphql-inspector` if it's already configured, to find unused
+  types/fields/arguments directly from the schema.
+- **React component prop usage:** `eslint` with `react/no-unused-prop-types` (if already
+  configured) or `react-scanner` can flag props that are declared but never read.
+
+Don't install heavyweight tooling the project doesn't already use. If none of the above
+apply, skip this step, rely on the Step 1 agents alone, and note the absence in the
+report's scope/confidence line (Step 4).
+
+---
+
 ## Step 1 — Parallel fan-out (4 agents)
 
 Spawn all four as `Explore`-type agents (read-only — this skill never edits source), IN
@@ -90,7 +113,9 @@ Read every component file (product, layout, admin, ui subdirectories). For each:
 ### Agent C — Data model & data-fetching layer
 
 Read all hooks/composables/services (whatever the stack's data-fetching layer is called),
-type files, API/seam files, and data-fetching utilities. For each:
+type files, API/seam files, and data-fetching utilities. If Step 0.5 produced a static-tool
+report (knip, GraphQL Inspector/Hive, etc.), start from its findings and verify/extend them
+rather than re-deriving everything from a blank slate. For each:
 
 - All fields on every data type/entity
 - What each hook/composable/service fetches and what mutations it provides
@@ -125,14 +150,36 @@ white on another.
 
 ### 2c — Convention gaps
 
-Things that every app of this type has by default but this one doesn't:
+Walk Nielsen Norman's 10 usability heuristics as the checklist — the industry-standard
+baseline for "things every app has by default," not an ad-hoc list:
 
-- Search with no clear button
-- Filter/sort state not in URL (lost on refresh/back)
-- No result count after filtering
-- No empty states on tabs
-- No "last updated" on legal documents
-- Missing ARIA patterns on custom controls
+1. **Visibility of system status** — no loading/progress indicator; no confirmation
+   after an action; no "last updated" on legal or time-sensitive documents.
+2. **Match between system and the real world** — internal/technical jargon exposed to
+   users instead of their own vocabulary.
+3. **User control and freedom** — no cancel/undo/back-out of a multi-step flow; search
+   with no clear button; no way to reset filters.
+4. **Consistency and standards** — the same control behaving differently across
+   surfaces (the cross-page variant of this is 2b); departure from platform conventions.
+5. **Error prevention** — destructive actions with no confirmation step; no input
+   validation before submit.
+6. **Recognition rather than recall** — user must remember state from a prior screen
+   instead of seeing it (no result count after filtering; filter/sort state not in the
+   URL, so it's lost on refresh/back).
+7. **Flexibility and efficiency of use** — no bulk actions, keyboard shortcuts, or
+   power-user path for a repetitive task.
+8. **Aesthetic and minimalist design** — usually out of scope for this skill; only flag
+   if clutter itself obscures a needed action.
+9. **Help users recognize, diagnose, and recover from errors** — a blank/white screen
+   or raw error instead of an actionable error state; no empty state on a tab with zero
+   results.
+10. **Help and documentation** — no inline help/tooltip on a non-obvious control where
+    the app's own conventions require domain knowledge.
+
+Missing ARIA patterns and keyboard nav on custom controls are convention gaps too — file
+them under whichever heuristic fits (usually #3 or #9). If the project has a dedicated
+a11y need, point at the `codebase-audit` skill's `a11y` lens rather than duplicating a
+full accessibility audit here.
 
 ### 2d — Data used partially
 
@@ -154,6 +201,11 @@ Assign each gap a priority:
 
 Within each priority, order by: frequency of user encounter → severity of consequence →
 ease of fix (a quick win ranks above an equivalent slow one).
+
+A gap that turns out to be an intentional product decision (confirmed via `CLAUDE.md`/
+`DESIGN.md`, a code comment, or asking the user) doesn't get a priority — move it to the
+"Acknowledged, not actioned" section instead (Step 4) so it stays visible without
+cluttering the ranked list.
 
 ---
 
@@ -195,6 +247,11 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
    - Where it's fetched from
    - Where it _could_ be used
 
+6. **Acknowledged, not actioned** — a small table for gaps that turned out to be
+   intentional product decisions (see Step 3). Columns: gap title, rationale, where the
+   decision is documented (if anywhere). Keeps these visible instead of silently
+   dropping them from the ranked list.
+
 ### Design guidelines for the HTML
 
 - Sticky header with section jump links
@@ -225,8 +282,9 @@ Follow these conventions:
   with file references, acceptance criteria
 - Keep tone technical and concise — reference specific component names and file paths
 - Cross-link related issues (`#N`) and sibling-repo issues (`owner/repo#N`)
-- Flag intentional non-gaps (known product decisions) — suggest documenting them in
-  code comments or design docs rather than filing issues
+- Intentional non-gaps (known product decisions) belong in the report's "Acknowledged,
+  not actioned" section (Step 4), not as filed issues — suggest documenting the
+  rationale in code comments or design docs if it isn't already
 
 ---
 
@@ -234,6 +292,10 @@ Follow these conventions:
 
 - Every gap card references at least one specific file path
 - Orphaned data table has an entry for every field that is fetched but unused
+- Where Step 0.5 ran a static tool (knip, GraphQL Inspector/Hive, etc.), its findings
+  are reflected in the orphaned-data section, not just re-derived prose from the agents
+- Every gap flagged as an intentional product decision during synthesis appears in the
+  "Acknowledged, not actioned" section — none are silently dropped
 - No gap is filed as an issue without first checking if it's already tracked
   (`gh issue list --search "keyword"`)
 - The HTML opens cleanly in a browser with no console errors
@@ -245,9 +307,11 @@ Follow these conventions:
 ## Hard rules
 
 - **Read-only on source.** Reading, running the project's own read-only tooling (e.g.
-  type-checking to confirm a field's shape), and `git`/`gh` queries are fine. Never edit,
-  format, or delete source files. The only file you write is `docs/GAP_ANALYSIS.html`
-  (plus GitHub issues, if the user opts in).
+  type-checking to confirm a field's shape, `knip`/`eslint`/`graphql-inspector` per
+  Step 0.5), and `git`/`gh` queries are fine. Never edit, format, or delete source files,
+  and never let a tool run with an autofix flag or install anything that changes the
+  lockfile. The only file you write is `docs/GAP_ANALYSIS.html` (plus GitHub issues, if
+  the user opts in).
 - **Evidence over assertion.** Every gap card and orphaned-field entry cites a real
   `file:line` found by one of the Step 1 agents — don't infer a gap you haven't located
   in the code.
