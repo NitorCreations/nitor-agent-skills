@@ -99,6 +99,8 @@ Read every page/route file. For each, report:
 - Navigation targets (where links/navigates go)
 - What states are handled (loading / error / empty)
 - What states are **not** handled that you'd expect
+- ARIA/keyboard-accessibility gaps on any custom (non-native) control on the page —
+  report this explicitly, don't leave it for Step 2c to catch opportunistically
 
 ### Agent B — Components & UI
 
@@ -109,6 +111,9 @@ Read every component file (product, layout, admin, ui subdirectories). For each:
 - What states it handles
 - What is visually present but has no interaction (display-only with no related action)
 - Any obvious missing complementary action (e.g. search but no clear, sort but no reset)
+- ARIA roles/labels and keyboard support on every custom (non-native) interactive
+  element — dialogs, dropdowns, custom checkboxes/toggles, drag-and-drop targets. Report
+  each one explicitly, whether it has them or not — don't only flag the missing ones
 
 ### Agent C — Data model & data-fetching layer
 
@@ -129,6 +134,8 @@ Read header, footer, layout, navigation, and auth/session components. Report:
 - User identity signals present (name, avatar, role badge)
 - Global state shown (notifications, counts, badges)
 - What is in the data model that could/should surface globally but doesn't
+- Whether the active nav item is exposed to assistive tech (`aria-current`), not just
+  styled differently via CSS
 
 ---
 
@@ -180,6 +187,12 @@ Missing ARIA patterns and keyboard nav on custom controls are convention gaps to
 them under whichever heuristic fits (usually #3 or #9). If the project has a dedicated
 a11y need, point at the `codebase-audit` skill's `a11y` lens rather than duplicating a
 full accessibility audit here.
+
+**Don't let zero ARIA findings pass silently.** If none of the Step 1 agents surfaced an
+accessibility gap, that's more often a sign the agents weren't asked to look than that
+the app is clean — verify it yourself with a quick grep for custom interactive elements
+(`<div onClick`, `role=`, custom `Modal`/`Dialog`/`Dropdown` components) before concluding
+there's nothing to report under #3/#9.
 
 ### 2d — Data used partially
 
