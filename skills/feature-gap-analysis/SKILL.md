@@ -108,6 +108,22 @@ is deliberately left as-is, or a link to an ADR/design doc. Report these alongsi
 finding they apply to, not as a separate list — Step 3 routes a finding with this kind of
 evidence to "Acknowledged, not actioned" instead of ranking it as a gap.
 
+**Report format — include this in every agent's brief.** Step 2 cross-references the four
+reports mechanically and Step 4 cites their evidence verbatim, so a finding without a
+location is unusable. Require each agent to:
+
+- Attach a `path/to/file.ext:line` reference to **every** finding and inventory item —
+  the exact line where the hook is called, the field is declared, the state is (not)
+  handled.
+- Structure the report as one block per file read, using the bullet headings of its brief
+  as fixed subheadings — same shape for every file, so blocks are comparable.
+- Return inventories (fields, hooks, nav links) as one line per item:
+  `item — file:line — one-line note`. Agent C's field inventory in particular must be one
+  line per field (`entity.field — file:line — fetched by <hook/service>`), because Step 2a
+  matches it line-by-line against Agent A/B's component reports.
+- End with a coverage line: which directories/files were read in full, which were skipped
+  or sampled, and why — this feeds the report's scope/confidence note (Step 4).
+
 ### Agent A — Pages & routing
 
 Read every page/route file. For each, report:
@@ -143,7 +159,11 @@ rather than re-deriving everything from a blank slate. For each:
 
 - All fields on every data type/entity
 - What each hook/composable/service fetches and what mutations it provides
-- Which fields are fetched but **not** consumed by any component (cross-reference with Agent A/B findings)
+- Where each field is referenced *within the data layer itself* (selectors, transforms,
+  mappers). Do **not** try to determine component-level consumption — the four agents run
+  in parallel, so Agent A/B's findings don't exist yet from your point of view. Matching
+  fields against what components actually render is Step 2a's job, done from your
+  inventory plus theirs.
 
 ### Agent D — Global chrome & navigation
 
@@ -165,7 +185,10 @@ With all four agent reports in hand, cross-reference to find:
 ### 2a — Orphaned data fields
 
 Fields that appear in type definitions or API responses but are never passed to or
-rendered by any component. Mark source file + line. These are the clearest gaps.
+rendered by any component. Determine this here, mechanically: match Agent C's field
+inventory against the data props/hooks Agents A and B reported — this is the
+cross-reference the parallel agents could not do themselves. Mark source file + line
+(taken from Agent C's inventory entries). These are the clearest gaps.
 
 ### 2b — Consistency gaps
 
@@ -252,8 +275,7 @@ is this" separately from "how urgent is it":
 - **Bug** — behavior contradicts something the app itself establishes elsewhere: a state
   handled on a parallel surface but not here (2b/2d), a broken/blank error or loading
   state, a dead-end action, an accessibility violation. Objectively wrong, not a matter of
-  taste. Every P1 is a Bug by definition (Step 3's P1 criteria already requires a broken
-  workflow).
+  taste.
 - **Code quality** — internal-only cleanup with no visible behavior change even after
   fixing (orphaned exports/fields, dead code, type mismatches, duplicated logic).
   Orphaned-data findings from 2a are almost always Code quality by default.
@@ -265,7 +287,10 @@ is this" separately from "how urgent is it":
 The Bug/Enhancement line isn't always sharp. When genuinely unsure, default to
 Enhancement rather than Bug — the same evidence-over-assertion bar applies here as
 everywhere else in this skill: don't call something a Bug unless you can point to the
-specific established pattern or broken state it contradicts.
+specific established pattern or broken state it contradicts. Priority never constrains
+type: a wholly missing capability (no password reset, no way to cancel an order) can be
+P1 because it blocks a workflow, yet still be an Enhancement because nothing the app
+establishes is contradicted. Don't adjust one to make the other "fit".
 
 A gap that turns out to be an intentional product decision — confirmed via a project doc
 found in Step 0 (`CLAUDE.md`/`AGENTS.md`/`DESIGN.md`/`ARCHITECTURE.md` or another doc
@@ -383,8 +408,6 @@ Follow these conventions:
 - Gap numbers are unique and sequential across the whole report, not restarted per priority
 - Every P1 card's description names the specific workflow and step it blocks — a P1 with
   no named blocked workflow is a sign it should be P2
-- Every P1 is typed Bug — if a P1 doesn't fit the Bug definition, its priority is wrong,
-  not its type
 
 ---
 
@@ -397,8 +420,10 @@ Follow these conventions:
   lockfile. The only file you write is `docs/GAP_ANALYSIS.html` (plus GitHub issues, if
   the user opts in).
 - **Evidence over assertion.** Every gap card and orphaned-field entry cites a real
-  `file:line` found by one of the Step 1 agents — don't infer a gap you haven't located
-  in the code.
+  `file:line` located in the code during this run — by a Step 1 agent, a Step 0.5 static
+  tool (knip, GraphQL Inspector/Hive), or your own verification grep in Step 2. Don't
+  infer a gap you haven't located in the code, and don't cite a raw tool hit without a
+  confirming read of that location.
 - **Be honest both ways.** Don't manufacture gaps to pad the report, and don't soften a
   real one because it's inconvenient.
 - **Always start fresh.** Never read or carry over a prior `docs/GAP_ANALYSIS.html` —
