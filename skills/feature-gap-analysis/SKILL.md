@@ -205,20 +205,40 @@ relevant (e.g. user name shown on homepage but not in header).
 
 Assign each gap a priority:
 
-| Priority          | Criteria                                                                        |
-| ----------------- | ------------------------------------------------------------------------------- |
-| **P1 — Critical** | Breaks or seriously impairs a core user workflow; causes confusion or data loss |
-| **P2 — High**     | Significant usability or consistency gap; users notice and are frustrated       |
-| **P3 — Medium**   | Missing feature users expect in an app of this type; reduces trust/engagement   |
-| **P4 — Low**      | Polish, completeness, or edge-case correctness                                  |
+| Priority          | Criteria                                                                                                                                       |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **P1 — Critical** | Prevents completion of a core workflow (checkout, sign-up, primary create/edit/delete action) or causes actual data loss/corruption               |
+| **P2 — High**     | Workflow still completes, but with real friction, wrong/misleading information shown, or a clear break from an expectation set elsewhere in the app |
+| **P3 — Medium**   | Missing feature users expect in an app of this type; reduces trust/engagement                                                                      |
+| **P4 — Low**      | Polish, completeness, or edge-case correctness                                                                                                     |
+
+"Confusing" or "suboptimal" alone never qualifies a gap for P1 — that's P2 at most. P1 is
+reserved for a named workflow step the user cannot get past, or data that is actually lost.
+Before finalizing, re-examine every P1 with a skeptical lens: would this really stop a user
+from finishing the task, or would they grumble and continue anyway? If the workflow still
+completes without the fix, downgrade it to P2. Every P1 card must state, in its "why this
+matters" line, exactly which workflow and which step is blocked (see Step 4).
 
 Within each priority, order by: frequency of user encounter → severity of consequence →
 ease of fix (a quick win ranks above an equivalent slow one).
 
+After ordering, assign each gap a **global sequential number** (G1, G2, G3, ...) running
+across the entire ranked list — continuous across priority boundaries, not restarting at
+P2/P3/P4. This is the number readers use to reference a specific gap ("issue 6"), so it
+must stay stable and unique regardless of which priority section the gap sits in.
+
+Tag each gap with a **category**, orthogonal to priority:
+
+- **User-facing** — a real user would perceive the difference once fixed (UI, content,
+  behavior, accessibility).
+- **Code quality** — internal-only cleanup with no visible UI change even after fixing
+  (orphaned exports/fields, dead code, type mismatches, duplicated logic). Orphaned-data
+  findings from 2a are almost always Code quality by default.
+
 A gap that turns out to be an intentional product decision (confirmed via `CLAUDE.md`/
-`DESIGN.md`, a code comment, or asking the user) doesn't get a priority — move it to the
-"Acknowledged, not actioned" section instead (Step 4) so it stays visible without
-cluttering the ranked list.
+`DESIGN.md`, a code comment, or asking the user) doesn't get a priority, number, or
+category — move it to the "Acknowledged, not actioned" section instead (Step 4) so it
+stays visible without cluttering the ranked list.
 
 ---
 
@@ -234,8 +254,9 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
 ### Required sections
 
 1. **Summary bar** — four cells: P1 count / P2 count / P3 count / P4 count with colour
-   coding, plus a one-line scope/confidence note (stack detected, what was covered in
-   full vs. sampled) so the report doesn't imply coverage it didn't achieve.
+   coding, a second row with User-facing count / Code quality count, plus a one-line
+   scope/confidence note (stack detected, what was covered in full vs. sampled) so the
+   report doesn't imply coverage it didn't achieve.
 
 2. **App mind map** — visual map of every page/route with its data sources, user actions,
    and gaps called out inline (missing items in dashed red boxes). Use pure CSS/HTML —
@@ -248,12 +269,17 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
    - Status: ✅ Full use / ⚠️ Partial / ✗ Orphaned
 
 4. **Ranked gap cards** — one card per gap, grouped by priority with a coloured top border.
-   Each card contains:
-   - Rank number (coloured circle)
+   Every priority section, including P3 and P4, uses this exact same card markup — never
+   degrade to a plain `<ul>`/`<li>` list once a section has more items; if a priority has
+   many entries, keep the card format and make it visually denser (tighter padding), not
+   structurally different. Each card contains:
+   - Global gap number from Step 3 (coloured circle, e.g. "G6") — unique and stable across
+     the whole report, not renumbered per priority section
    - Title (one sharp sentence)
    - "What exists" block (grey inset — what's already there so readers understand context)
-   - Description (why this matters, what the user experience is)
-   - Meta badges (affected files, user impact label)
+   - Description (why this matters, what the user experience is; for P1 cards, this must
+     name the specific workflow and step that's blocked, per Step 3)
+   - Meta badges (affected files, user impact label, category: User-facing or Code quality)
 
 5. **Orphaned data section** — grid of cards, one per orphaned field. Each shows:
    - Field path in monospace
@@ -270,7 +296,10 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
 - Sticky header with section jump links
 - Fixed TOC on the right (hidden on narrow screens)
 - Colour palette: dark background for header, light grey page, white cards
-- P1 red / P2 orange / P3 blue / P4 green — consistent throughout
+- P1 red / P2 orange / P3 blue / P4 green — consistent throughout, applied via the top
+  border and rank circle on every card regardless of priority
+- Category badge uses a visually distinct style from the priority border (e.g. an outlined
+  pill vs. the solid coloured border) so priority and category never get confused
 - No JavaScript required for core content; a small scroll-spy for TOC is optional
 
 ---
@@ -279,15 +308,17 @@ Overwrite it wholesale; git history preserves the old version, so no backup is n
 
 After writing the HTML, present a short summary to the user:
 
-- Total gap count by priority
-- The top 3 highest-impact findings in plain text
+- Total gap count by priority, and by category (User-facing vs Code quality)
+- The top 3 highest-impact findings in plain text, by their global gap number
 - Ask whether to file GitHub issues (individually or bundled by theme)
 
 ### If filing issues
 
 Follow these conventions:
 
-- **Bundle** gaps that touch the same files or the same user flow into one issue
+- **Bundle** gaps that touch the same files or the same user flow into one issue; prefer
+  keeping User-facing and Code quality gaps in separate issues even if they touch the
+  same file, since they likely have different reviewers/urgency
 - **Separate** gaps that have different owners (frontend vs. backend, different subsystems)
 - For gaps that require a backend API change, also offer to file a corresponding issue
   in the backend/sibling repository
@@ -314,6 +345,11 @@ Follow these conventions:
 - The HTML opens cleanly in a browser with no console errors
 - P1 gaps are never bundled away — each P1 gets its own issue or is the lead item
   in a bundle
+- Every gap card, in every priority section from P1 through P4, has a numbered circle and
+  a category badge — no section falls back to a plain bullet list
+- Gap numbers are unique and sequential across the whole report, not restarted per priority
+- Every P1 card's description names the specific workflow and step it blocks — a P1 with
+  no named blocked workflow is a sign it should be P2
 
 ---
 
