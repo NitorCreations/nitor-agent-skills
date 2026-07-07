@@ -11,11 +11,14 @@ FLOW RUNDOWN (quick reference)
                          closed issue → stop and check with the user.
 2. Create worktree     — EnterWorktree with name issue-<N>-<slug>. Fallback for
                          non-Claude agents: git worktree add off the default branch.
-3. Plan                — EnterPlanMode; reconcile issue text against the actual
+3. Ask for more context — give the user a chance to add anything not in the
+                         issue itself before planning starts; blank reply means
+                         proceed with the issue as written.
+4. Plan                — EnterPlanMode; reconcile issue text against the actual
                          code (issues go stale); AskUserQuestion for genuine
                          ambiguity; plan cites issue #N; ExitPlanMode to approve.
-4. Implement           — per approved plan, in the worktree, project checks pass.
-5. Wrap up             — report; commit/push/PR ("Fixes #N") only on explicit
+5. Implement           — per approved plan, in the worktree, project checks pass.
+6. Wrap up             — report; commit/push/PR ("Fixes #N") only on explicit
                          confirmation — those are outward-facing.
 
 Load-bearing: fetch the issue BEFORE creating the worktree (the number and title
@@ -50,7 +53,7 @@ Two checks before going further:
 - **Repo match.** Compare the issue's repo against `gh repo view --json nameWithOwner --jq .nameWithOwner` for the current directory. If they differ, stop and tell the user — they're likely in the wrong checkout, and creating a worktree here would put the work in the wrong repository. Don't clone the other repo on your own initiative.
 - **State.** If the issue is closed, flag it and confirm the user really wants to work on it before continuing — it may already be fixed, or they may have pasted the wrong link.
 
-Summarize back what the issue asks for in a sentence or two before creating anything — if the issue is vague ("app is slow"), that's a planning problem to solve in step 3, not a reason to stop here.
+Summarize back what the issue asks for in a sentence or two before creating anything — if the issue is vague ("app is slow"), that's a planning problem to solve in step 4, not a reason to stop here.
 
 ## 2. Create the worktree
 
@@ -67,7 +70,13 @@ git worktree add .claude/worktrees/issue-<NUMBER>-<slug> -b issue-<NUMBER>-<slug
 
 and do all subsequent work inside that directory.
 
-## 3. Plan the implementation
+## 3. Ask for more context
+
+Before planning, give the user one chance to add anything about the issue that isn't captured in its body or comments — internal discussion, priority, constraints, a preferred approach, or things tried already. Ask directly, e.g.: "Anything else about this issue I should know before planning — internal context, constraints, preferred approach? Leave it blank if the issue as written covers it."
+
+A blank or "no" reply means proceed with the issue as written — don't press for input the user has already declined to give. Fold anything they do provide into the plan in step 4 alongside the issue body and comments.
+
+## 4. Plan the implementation
 
 Enter plan mode with **EnterPlanMode** — issue-driven work is exactly the case for it: the requirements were written by someone else, possibly a while ago, and need reconciling against the code as it exists now.
 
@@ -80,13 +89,13 @@ While planning:
 
 Then present the plan for approval with **ExitPlanMode**. Don't start editing files before the plan is approved.
 
-## 4. Implement
+## 5. Implement
 
 Work the approved plan inside the worktree. Stay on the worktree's branch — never the default branch.
 
 Run the project's checks as you go — consult `CLAUDE.md`, `README`, or package scripts for the right commands (test runner, linter, type-checker). If implementation reveals the approved plan doesn't survive contact with the code, stop and tell the user what changed rather than silently building something different from what they approved.
 
-## 5. Wrap up
+## 6. Wrap up
 
 Report what was built against the issue's acceptance criteria, with the diff stat and check results — the actual outcome, not intent.
 
@@ -100,4 +109,4 @@ The worktree stays in place either way — the user decides at session end wheth
 
 ## Done when
 
-The issue was fetched and understood (comments included) before anything was created; the work sits on its own branch in a worktree named after the issue; a plan citing the issue was approved before the first file edit; the implementation matches that plan with project checks passing; and nothing was committed, pushed, or opened as a PR without the user's explicit go-ahead.
+The issue was fetched and understood (comments included) before anything was created; the work sits on its own branch in a worktree named after the issue; the user was given a chance to add context beyond the issue itself before planning began; a plan citing the issue was approved before the first file edit; the implementation matches that plan with project checks passing; and nothing was committed, pushed, or opened as a PR without the user's explicit go-ahead.
