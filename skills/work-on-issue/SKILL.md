@@ -11,8 +11,8 @@ FLOW RUNDOWN (quick reference)
                          closed issue → stop and check with the user.
 2. Create worktree     — EnterWorktree with name issue-<N>-<slug>. Fallback for
                          non-Claude agents: git worktree add off the default branch.
-3. Ask for more context — give the user a chance to add anything not in the
-                         issue itself before planning starts; blank reply means
+3. Ask for more context — hard stop: end the turn and wait for an actual
+                         reply before planning starts; blank reply means
                          proceed with the issue as written.
 4. Plan                — EnterPlanMode; reconcile issue text against the actual
                          code (issues go stale); AskUserQuestion for genuine
@@ -74,7 +74,9 @@ and do all subsequent work inside that directory.
 
 Before planning, give the user one chance to add anything about the issue that isn't captured in its body or comments — internal discussion, priority, constraints, a preferred approach, or things tried already. Ask directly, e.g.: "Anything else about this issue I should know before planning — internal context, constraints, preferred approach? Leave it blank if the issue as written covers it."
 
-A blank or "no" reply means proceed with the issue as written — don't press for input the user has already declined to give. Fold anything they do provide into the plan in step 4 alongside the issue body and comments.
+**This is a hard stop, not a rhetorical aside.** End your turn on this question and wait for the user's actual reply — do not answer it yourself, assume a blank reply, or continue into step 4 in the same turn. This applies even under a general bias toward not pausing for clarifying questions: that bias is for decisions you can make with a sensible default, not for skipping a step this skill defines as an explicit checkpoint.
+
+Once the user replies, a blank or "no" answer means proceed with the issue as written — don't press further for input they've already declined to give. Fold anything they do provide into the plan in step 4 alongside the issue body and comments.
 
 ## 4. Plan the implementation
 
@@ -83,7 +85,8 @@ Enter plan mode with **EnterPlanMode** — issue-driven work is exactly the case
 While planning:
 
 - **Verify the issue against reality.** Reproduce the bug or locate the feature area before designing anything. Issues go stale — the code may have moved, the bug may be half-fixed, the proposed solution in the issue may target code that no longer exists. Where the issue's description and the code disagree, the code wins; note the discrepancy in the plan.
-- **Mine the comments.** Maintainer replies often narrow scope, reject approaches, or add acceptance criteria that supersede the original body. Treat the latest substantive maintainer comment as the current spec.
+- **Mine the comments.** Maintainer replies often narrow scope, reject approaches, or add acceptance criteria that supersede the original body. Treat the latest substantive maintainer comment as the current spec — unless the user's own input (step 3, or anything they say during planning) contradicts it.
+- **The user outranks the paper trail.** The issue body and its comments are a fixed, possibly stale record; the user talking to you right now knows the current state of things. Where what the user says conflicts with the issue text or comments — priority, intended behavior, scope, an approach the issue proposed but the user now says is wrong — go with the user and note in the plan that this diverges from the written issue.
 - **Ask, don't assume.** For genuine forks in the road — two valid architectures, unclear scope boundary, a suggested fix in the issue that you'd diverge from — use AskUserQuestion before finalizing the plan, so the plan the user approves is unambiguous.
 - **Cite the issue.** The plan should reference `#<NUMBER>` and state which acceptance criteria (explicit or inferred) it satisfies, so the user can judge the plan against the issue, not just against your reading of it.
 
