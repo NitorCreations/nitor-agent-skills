@@ -10,10 +10,13 @@ FLOW RUNDOWN (quick reference)
                          body, state, branch, commits, reviews, comments,
                          checks via gh. Repo mismatch or non-open PR → stop
                          and check with the user.
-2. Create worktree     — EnterWorktree with name pr-<N>-<slug> (this cuts a
-                         throwaway branch off default); then `gh pr checkout
-                         <N>` inside it to switch to the PR's real branch;
-                         clean up the throwaway branch.
+2. Reuse or create worktree — `git worktree list --porcelain` first; if the
+                         PR's branch is already checked out somewhere (e.g.
+                         leftover from work-on-issue), EnterWorktree(path=…)
+                         into it instead. Otherwise EnterWorktree with name
+                         pr-<N>-<slug> (cuts a throwaway branch off default),
+                         then `gh pr checkout <N>` inside it to switch to the
+                         PR's real branch, then clean up the throwaway branch.
 3. Familiarize         — read the diff, commit history, description, and
                          review/comment threads; check CI status. Summarize
                          what's done and what's outstanding.
@@ -21,9 +24,13 @@ FLOW RUNDOWN (quick reference)
                          No plan, no edits, no commits — that's a separate
                          next step the user asks for explicitly.
 
-Load-bearing: the worktree must land on the PR's actual branch, not a fresh
-branch off default — EnterWorktree alone doesn't do this, `gh pr checkout`
-inside it does. This skill ends at orientation; it does not plan or implement.
+Load-bearing: check for an existing worktree on the PR's branch before
+creating a new one — git refuses to check out the same branch twice, so
+skipping this check breaks on any PR already picked up via work-on-issue.
+When one must be created, it must land on the PR's actual branch, not a
+fresh branch off default — EnterWorktree alone doesn't do this, `gh pr
+checkout` inside it does. This skill ends at orientation; it does not plan
+or implement.
 -->
 
 # Working on an existing pull request
@@ -56,9 +63,17 @@ Two checks before going further:
 
 Summarize back what the PR is trying to do in a sentence or two before creating anything.
 
-## 2. Create the worktree on the PR's branch
+## 2. Reuse or create the worktree on the PR's branch
 
-Derive a name from the PR: `pr-<NUMBER>-<slug>`, where the slug is the title kebab-cased (lowercase, letters/digits/dashes only, trimmed so the whole name stays under 64 characters).
+**Check for a leftover worktree first.** The PR's branch may already be checked out somewhere — e.g. a `work-on-issue` run that implemented this PR and left its worktree in place, or an earlier `work-on-pr` run on the same PR. Creating a second worktree for a branch that's already checked out elsewhere fails (git refuses to check out the same branch twice), so look before creating:
+
+```bash
+git worktree list --porcelain
+```
+
+Scan the output for an entry whose `branch` matches `refs/heads/<headRefName>` from step 1. If one exists, switch into it with **EnterWorktree**, passing its `path` — do not create a new worktree. Skip straight to fetching latest (`git fetch origin && git merge --ff-only origin/<headRefName>`, or note if the local branch has diverged) and then to step 3; the branch is already correct, so there's no placeholder to check out or clean up.
+
+If no matching worktree exists, derive a name from the PR: `pr-<NUMBER>-<slug>`, where the slug is the title kebab-cased (lowercase, letters/digits/dashes only, trimmed so the whole name stays under 64 characters).
 
 Create it with the **EnterWorktree** tool, passing that name. EnterWorktree always cuts a fresh branch off the default branch (or current HEAD) — it has no notion of the PR's actual branch, so that new branch is just a placeholder to get an isolated directory.
 
@@ -74,7 +89,7 @@ This fetches the PR's head (handling fork-owned branches transparently) and chec
 git branch -D pr-<NUMBER>-<slug>
 ```
 
-If EnterWorktree isn't available (a non-Claude agent running this skill), fall back to plain git:
+If EnterWorktree isn't available (a non-Claude agent running this skill), fall back to plain git — check `git worktree list` for an existing checkout of `<headRefName>` first and `cd` into it if found, otherwise:
 
 ```bash
 git fetch origin
@@ -110,4 +125,4 @@ The worktree stays in place either way — the user decides at session end wheth
 
 ## Done when
 
-The PR was fetched and understood (description, comments, reviews, and CI status included) before anything was created; a worktree was created and switched onto the PR's actual head branch, not a fresh branch off default; the diff and commit history were read closely enough to summarize accurately what's done and what's outstanding; and the session stopped at that summary without entering planning or making any edits.
+The PR was fetched and understood (description, comments, reviews, and CI status included) before anything was created; existing worktrees were checked and reused if the PR's branch was already checked out somewhere, otherwise a new one was created and switched onto the PR's actual head branch, not a fresh branch off default; the diff and commit history were read closely enough to summarize accurately what's done and what's outstanding; and the session stopped at that summary without entering planning or making any edits.
