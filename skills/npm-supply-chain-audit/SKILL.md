@@ -3,7 +3,7 @@ name: npm-supply-chain-audit
 description: >
   Audit and fix npm supply-chain security issues in the current repo. Detects the package manager,
   checks for missing protections (lockfile, lifecycle script blocking, release-age cooldown,
-  exotic dependency blocking, pnpm trust policy, Yarn Berry hardened mode), presents findings, and applies
+  exotic dependency blocking, pnpm trust policy), presents findings, and applies
   fixes after user confirmation. Supports npm, pnpm, Yarn, Bun, and Aube.
   Use when asked to "harden npm", "fix supply chain", "secure dependencies", or "audit npm security".
 allowed-tools:
@@ -218,15 +218,15 @@ trustPolicy: no-downgrade
 
 This blocks packages whose trust level has decreased.
 
-### 2.8 Hardened mode (Yarn Berry only)
+### 2.8 Hardened mode (Yarn Berry only) – optional
 
-If using Yarn Berry, ensure `.yarnrc.yml` contains:
+Hardened mode makes Yarn re-validate that the lockfile's resolutions and metadata match the registry, which catches lockfile tampering. It also slows installs down significantly, so do NOT recommend enabling it by default.
 
-```yaml
-enableHardenedMode: true
-```
+If using Yarn Berry, check `.yarnrc.yml` for `enableHardenedMode`:
 
-This validates the lockfile against the registry.
+- **Not set** – Yarn enables it automatically when running on GitHub Actions for pull requests from forks, and leaves it off elsewhere. This is a reasonable default. Mention hardened mode as an option the user may enable, note the install slowdown, and link to https://yarnpkg.com/features/security#hardened-mode. Do not include it in the proposed fixes unless the user asks for it.
+- **`true`** – already enabled everywhere; report as passing, and note that the install slowdown is expected.
+- **`false`** – explicitly disabled, including for fork pull requests on CI. Flag this so the user can confirm it was intentional.
 
 ### 2.9 Dependency update cooldown (Renovate / Dependabot)
 
@@ -263,8 +263,9 @@ Present a summary of the audit results to the user:
 2. List checks that already pass as bullet points (not numbered) – keep these brief
 3. List checks that need fixes, with the specific changes that would be made
 4. List any issues that require manual action (e.g. missing lockfile, `dangerouslyAllowAllBuilds`)
-5. When multiple fixes target the same file, show a combined preview of the full proposed file content at the end
-6. Do not use horizontal rules (`---`) – headings provide enough structure
+5. List optional hardening the user may opt into (e.g. Yarn hardened mode) separately from the fixes, with its trade-off stated
+6. When multiple fixes target the same file, show a combined preview of the full proposed file content at the end
+7. Do not use horizontal rules (`---`) – headings provide enough structure
 
 IMPORTANT formatting rules – follow exactly:
 
