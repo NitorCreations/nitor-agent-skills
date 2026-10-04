@@ -12,12 +12,11 @@ allowed-tools:
   - Write
   - Glob
   - Grep
-  - Bash(node *)
-  - Bash(npm *)
-  - Bash(pnpm *)
-  - Bash(yarn *)
-  - Bash(bun *)
-  - Bash(git *)
+  - Bash(npm --version)
+  - Bash(pnpm --version)
+  - Bash(yarn --version)
+  - Bash(bun --version)
+  - Bash(aube --version)
 ---
 
 # npm supply-chain security audit
@@ -39,7 +38,7 @@ Use the `packageManager` field to determine the version. If not present, run the
 
 pnpm 11 ships several supply-chain protections on by default (`minimumReleaseAge: 1440`, `blockExoticSubdeps: true`, `strictDepBuilds: true`) and only reads pnpm-specific settings from `pnpm-workspace.yaml` (or `~/.config/pnpm/config.yaml`), not from `.npmrc`. Many checks below differ between pnpm 10 and pnpm 11+.
 
-npm 12 (estimated July 2026) similarly ships protections on by default: dependency lifecycle scripts are blocked unless approved via the `allowScripts` field in `package.json`, and git and remote-URL dependencies are blocked (`allow-git` and `allow-remote` default to `none`). Several checks below differ between npm 11 and npm 12+.
+npm 12 similarly ships protections on by default: dependency lifecycle scripts are blocked unless approved via the `allowScripts` field in `package.json`, and git and remote-URL dependencies are blocked (`allow-git` and `allow-remote` default to `none`). Several checks below differ between npm 11 and npm 12+.
 
 If no lockfile exists, default to npm.
 
